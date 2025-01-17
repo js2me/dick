@@ -1,6 +1,6 @@
 <img src="assets/logo.png" align="right" height="156" alt="logo" />
 
-# Dependency Injection Container Kit  
+# Dependency Injection Kit  
 
 [![NPM version][npm-image]][npm-url] [![build status][github-build-actions-image]][github-actions-url] [![npm download][download-image]][download-url] [![bundle size][bundlephobia-image]][bundlephobia-url]
 
