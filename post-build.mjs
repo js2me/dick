@@ -14,7 +14,7 @@ postBuildScript({
         publishCommand: 'pnpm publish',
         commitAllCurrentChanges: true,
         createTag: true,
-        githubRepoLink: 'https://github.com/js2me/dick',
+        githubRepoLink: 'https://github.com/js2me/dikit',
         cleanupCommand: 'pnpm clean', 
         targetPackageJson
       })

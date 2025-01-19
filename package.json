@@ -9,9 +9,14 @@
     "prebuild": "npm run clean && npm run check",
     "build": "tsc && node ./post-build.mjs",
     "pub": "PUBLISH=true pnpm run build",
+    "prepublish": "pnpm test",
     "pub:patch": "PUBLISH=true PUBLISH_VERSION=patch pnpm run build",
     "pub:minor": "PUBLISH=true PUBLISH_VERSION=minor pnpm run build",
-    "pub:major": "PUBLISH=true PUBLISH_VERSION=major pnpm run build"
+    "pub:major": "PUBLISH=true PUBLISH_VERSION=major pnpm run build",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "dev": "pnpm test:watch"
   },
   "keywords": [],
   "author": "js2me",
@@ -19,21 +24,27 @@
   "description": "",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/js2me/dick/issues"
+    "url": "https://github.com/js2me/dikit/issues"
   },
-  "homepage": "https://github.com/js2me/dick",
+  "homepage": "https://github.com/js2me/dikit",
   "repository": {
     "type": "git",
-    "url": "git://github.com/js2me/dick"
+    "url": "git://github.com/js2me/dikit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "linked-abort-controller": "^1.0.4",
+    "yummies": "^3.0.12"
+  },
   "devDependencies": {
     "@types/node": "^20.17.11",
+    "@vitejs/plugin-react-swc": "^3.7.2",
     "eslint": "^8.57.1",
     "js2me-eslint-config": "^1.0.7",
     "js2me-exports-post-build-script": "^2.0.17",
+    "jsdom": "^26.0.0",
     "rimraf": "^6.0.1",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.1"
   },
   "packageManager": "pnpm@9.5.0+sha512.140036830124618d624a2187b50d04289d5a087f326c9edfc0ccd733d76c4f52c3a313d4fc148794a2a9d81553016004e6742e8cf850670268a7387fc220c903"
 }
