@@ -43,7 +43,7 @@ export class Container {
   ): TConstructor extends Class<infer TInstance> ? TInstance : never;
 
   inject<TTag extends Tag<any>>(
-    tag: TTag extends Tag<infer TTarget> ? TTarget : never,
+    tag: TTag,
     ...args: TTag extends Tag<any, infer TArgs> ? TArgs : []
   ): TTag extends Tag<infer TTarget> ? TTarget : never;
 

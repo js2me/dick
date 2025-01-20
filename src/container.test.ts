@@ -196,6 +196,8 @@ describe('Container', () => {
       value: () => 1,
     });
 
-    expect(inject(tag)).toBe(1);
+    const value = inject(tag) satisfies 1;
+
+    expect(value).toBe(1);
   });
 });
