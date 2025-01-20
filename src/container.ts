@@ -225,16 +225,24 @@ export class Container {
     }
 
     targetToDestroy.dependencies.clear();
-    targetToDestroy.children.forEach((child) => child.destroy());
 
-    if (targetToDestroy.parent) {
-      const thisIndexInParent = targetToDestroy.parent.children.indexOf(this);
+    while (targetToDestroy && targetToDestroy.dependencies.size === 0) {
+      targetToDestroy.children.forEach((child) => child.destroy());
 
-      if (thisIndexInParent !== -1) {
-        targetToDestroy.parent.children.splice(thisIndexInParent, 1);
+      if (targetToDestroy.parent) {
+        const thisIndexInParent = targetToDestroy.parent.children.indexOf(this);
+
+        if (thisIndexInParent !== -1) {
+          targetToDestroy.parent.children.splice(thisIndexInParent, 1);
+        }
+
+        if (targetToDestroy.parent !== rootContainer) {
+          targetToDestroy = targetToDestroy.parent;
+        }
+        delete targetToDestroy.parent;
+      } else {
+        targetToDestroy = null;
       }
-
-      delete targetToDestroy.parent;
     }
   }
 }
