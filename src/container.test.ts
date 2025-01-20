@@ -126,7 +126,6 @@ describe('Container', () => {
     const container = new ContainerMock({
       containerConstructor: ContainerMock,
     });
-    const { register, inject } = container;
 
     class AbortController extends LinkedAbortController {
       static readonly contstructorSpy = vi.fn();
@@ -139,12 +138,12 @@ describe('Container', () => {
       }
     }
 
-    register(AbortController, { scope: 'container' });
+    container.register(AbortController, { scope: 'container' });
 
     class AnimalDetails {
       static readonly contstructorSpy = vi.fn();
 
-      protected abortController = inject(AbortController);
+      protected abortController = container.inject(AbortController);
 
       constructor(private config: { name: string }) {
         AnimalDetails.contstructorSpy();
@@ -155,25 +154,25 @@ describe('Container', () => {
       }
     }
 
-    register(AnimalDetails);
+    container.register(AnimalDetails);
 
     class Dog {
       static readonly contstructorSpy = vi.fn();
 
-      protected abortController = inject(AbortController);
+      protected abortController = container.inject(AbortController);
 
-      details = inject(AnimalDetails, { name: 'Fluffy' });
+      details = container.inject(AnimalDetails, { name: 'Fluffy' });
 
-      details1 = inject(AnimalDetails, { name: 'Borya' });
+      details1 = container.inject(AnimalDetails, { name: 'Borya' });
 
       constructor() {
         Dog.contstructorSpy();
       }
     }
 
-    register(Dog);
+    container.register(Dog);
 
-    const dog = inject(Dog);
+    const dog = container.inject(Dog);
 
     expect(dog.details.name).toBe('Fluffy');
     expect(dog).toBeInstanceOf(Dog);
@@ -188,15 +187,14 @@ describe('Container', () => {
     const container = new ContainerMock({
       containerConstructor: ContainerMock,
     });
-    const { register, inject } = container;
 
     type Kek = 1;
 
-    const tag = register<Kek>({
+    const tag = container.register<Kek>({
       value: () => 1,
     });
 
-    const value = inject(tag) satisfies 1;
+    const value = container.inject(tag) satisfies 1;
 
     expect(value).toBe(1);
   });

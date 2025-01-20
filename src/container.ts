@@ -31,10 +31,6 @@ export class Container {
     this.abortController.signal.addEventListener('abort', () => {
       this.destroy();
     });
-
-    this.inject = this.inject.bind(this);
-    this.register = this.register.bind(this);
-    this.destroy = this.destroy.bind(this);
   }
 
   inject<TConstructor extends Class<any>>(

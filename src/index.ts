@@ -6,6 +6,7 @@ import { Tag } from './tag.js';
 
 export const container = rootContainer;
 
-export const { inject, register, destroy } = container;
-
+export const inject = container.inject.bind(container);
+export const register = container.register.bind(container);
+export const destroy = container.destroy.bind(container);
 export const tag = Tag.create;
