@@ -32,6 +32,10 @@ const createContainerMock = () => {
     getDependencies() {
       return this.dependencies;
     }
+
+    _getContainerFromInstance(instance: any) {
+      return super.getContainerFromInstance(instance);
+    }
   };
 };
 
@@ -107,18 +111,11 @@ describe('Container', () => {
 
     expect(container.getParent()).toBeUndefined();
     expect(container.getChildren()).toHaveLength(1); // Container for Main
-    expect(container.getDependencies().size).toBe(0);
+    expect(container.getDependencies().size).toBe(1);
 
     const mainContainerExpect = container.getChildren()[0];
 
-    expect(mainContainerExpect.getDependencies().size).toBe(1);
-
-    const mainInstanceExpect = [
-      ...mainContainerExpect.getDependencies().values(),
-    ][0];
-
-    expect(mainInstanceExpect).toBeInstanceOf(Main);
-    expect(mainInstanceExpect).toBe(main);
+    expect(mainContainerExpect.getDependencies().size).toBe(3);
   });
 
   it('complex', () => {
@@ -180,6 +177,66 @@ describe('Container', () => {
     expect(AnimalDetails.contstructorSpy).toBeCalledTimes(2);
     expect(Dog.contstructorSpy).toBeCalledTimes(1);
     expect(ContainerMock.contstructorSpy).toBeCalledTimes(5);
+  });
+
+  it('destroy', () => {
+    const ContainerMock = createContainerMock();
+    const container = new ContainerMock({
+      containerConstructor: ContainerMock,
+    });
+
+    class Deep1 {
+      destroy() {
+        container.destroy(this);
+      }
+    }
+    container.register(Deep1, { scope: 'container' });
+
+    class Deep2 {
+      deep1 = container.inject(Deep1);
+      destroy() {
+        container.destroy(this);
+      }
+    }
+    container.register(Deep2, { scope: 'container' });
+
+    class Deep3 {
+      deep3 = container.inject(Deep2);
+      destroy() {
+        container.destroy(this);
+      }
+    }
+    container.register(Deep3, { scope: 'container' });
+
+    class Deep4 {
+      deep3 = container.inject(Deep3);
+      destroy() {
+        container.destroy(this);
+      }
+    }
+    container.register(Deep4, { scope: 'container' });
+
+    class Deep5 {
+      deep4 = container.inject(Deep4);
+      destroy() {
+        container.destroy(this);
+      }
+    }
+    container.register(Deep5, { scope: 'container' });
+
+    const deep5 = container.inject(Deep5);
+
+    deep5.destroy();
+
+    const deep5Container = container._getContainerFromInstance(
+      deep5,
+    )! as typeof container;
+
+    expect(container.getChildren().length).toBe(0);
+    expect(container.getDependencies().size).toBe(0);
+
+    expect(deep5Container.getChildren().length).toBe(0);
+    expect(deep5Container.getDependencies().size).toBe(0);
   });
 
   it('tag (simple)', () => {

@@ -198,50 +198,73 @@ export class Container {
     const instance = tag.createValue(...args);
 
     if (tag.strategy === 'class-constructor') {
-      instance[mark] = container;
+      Object.defineProperty(instance, mark, {
+        value: container,
+        configurable: false,
+        writable: false,
+        enumerable: false,
+      });
     }
 
-    container.dependencies.set(tag, instance);
+    parent.dependencies.set(tag, instance);
 
     this.path.splice(index);
 
     return instance;
   }
 
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   destroy(instance?: any) {
-    if (!instance && this === rootContainer) {
-      throw new Error('You can destroy root container, please pass instance');
-    }
-
-    let targetToDestroy;
+    let destroyTarget: Container | null;
 
     if (instance == null) {
       // eslint-disable-next-line unicorn/no-this-assignment, @typescript-eslint/no-this-alias
-      targetToDestroy = this;
+      destroyTarget = this;
     } else if (instance instanceof Container) {
-      targetToDestroy = instance;
+      destroyTarget = instance;
     } else {
-      targetToDestroy = this.getContainerFromInstance(instance) ?? this;
+      destroyTarget = this.getContainerFromInstance(instance) ?? this;
     }
 
-    targetToDestroy.dependencies.clear();
+    if (destroyTarget === rootContainer) {
+      throw new Error("You can't destroy root container, please pass instance");
+    }
 
-    while (targetToDestroy && targetToDestroy.dependencies.size === 0) {
-      targetToDestroy.children.forEach((child) => child.destroy());
+    destroyTarget.dependencies.forEach((dependency) => {
+      this.destroy(dependency);
+    });
 
-      if (targetToDestroy.parent) {
-        const thisIndexInParent = targetToDestroy.parent.children.indexOf(this);
+    destroyTarget.dependencies.clear();
+
+    while (destroyTarget && destroyTarget.dependencies.size === 0) {
+      while (destroyTarget.children.length > 0) {
+        const child = destroyTarget.children.shift();
+        child?.destroy();
+      }
+
+      if (destroyTarget.parent) {
+        const thisIndexInParent =
+          destroyTarget.parent.children.indexOf(destroyTarget);
 
         if (thisIndexInParent !== -1) {
-          targetToDestroy.parent.children.splice(thisIndexInParent, 1);
+          destroyTarget.parent.children.splice(thisIndexInParent, 1);
         }
 
-        if (targetToDestroy.parent !== rootContainer) {
-          targetToDestroy = targetToDestroy.parent;
+        const parentDepsMap = destroyTarget.parent.dependencies;
+
+        parentDepsMap.forEach((parentDep, tag) => {
+          const dependencyContainer = this.getContainerFromInstance(parentDep);
+          if (destroyTarget && dependencyContainer === destroyTarget) {
+            parentDepsMap.delete(tag);
+          }
+        });
+
+        if (destroyTarget.parent !== rootContainer) {
+          destroyTarget = destroyTarget.parent;
         }
-        delete targetToDestroy.parent;
+        delete destroyTarget.parent;
       } else {
-        targetToDestroy = null;
+        destroyTarget = null;
       }
     }
   }
