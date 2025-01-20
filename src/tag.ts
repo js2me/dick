@@ -1,5 +1,3 @@
-import { Class } from 'yummies/utils/types';
-
 import { InjectRegisterConfig } from './container.types';
 import { TagConfig, TagDetailedConfig } from './tag.types';
 
@@ -18,21 +16,24 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
             token: configOrToken,
           };
 
-    this.strategy =
-      (this.config.strategy ?? typeof this.config.token === 'function')
-        ? 'class-constructor'
-        : 'token';
+    if (this.config.strategy) {
+      this.strategy = this.config.strategy;
+    } else if (typeof this.config.token === 'function') {
+      this.strategy = 'class-constructor';
+      this.config.classConstructor = this.config.token;
+    } else if (this.config.classConstructor) {
+      this.strategy = 'class-constructor';
+    } else {
+      this.strategy = 'token';
+    }
 
     this.injectConfig = {
       __: this.config.__,
       scope: this.config.scope ?? 'transient',
     };
 
-    if (
-      this.strategy === 'class-constructor' &&
-      typeof this.config.token === 'function'
-    ) {
-      Object.assign(this.config.token, {
+    if (this.strategy === 'class-constructor') {
+      Object.assign(this.config.classConstructor!, {
         [mark]: this,
       });
     }
@@ -40,7 +41,7 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
 
   createValue(...args: any[]): TTarget {
     if (this.strategy === 'class-constructor') {
-      return new (this.config.token as Class<TTarget>)(...args);
+      return new this.config.classConstructor!(...args);
     }
 
     if (this.config.value) {

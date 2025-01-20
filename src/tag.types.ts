@@ -11,6 +11,7 @@ export interface TagDetailedConfig<TTarget, TArgs extends any[] = any[]>
   token?: TagSimpleConfig<TTarget> | Class<TTarget>;
   meta?: any;
   value?: (...args: TArgs) => TTarget;
+  classConstructor?: Class<TTarget>;
   strategy?: 'class-constructor' | 'token';
 }
 
