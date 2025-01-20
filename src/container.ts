@@ -3,20 +3,16 @@
 import { LinkedAbortController } from 'linked-abort-controller';
 import { Class, Maybe } from 'yummies/utils/types';
 
-import { ContainerConfig, InjectRegisterConfig } from './container.types.js';
+import { ContainerConfig } from './container.types.js';
 import { Tag } from './tag.js';
-import { TagConfig } from './tag.types.js';
+import { TagConfig, TagDetailedConfig } from './tag.types.js';
 
 const mark = Symbol('di');
-
-const defaultInjectRegisterConfig: InjectRegisterConfig = {
-  scope: 'transient',
-};
 
 export class Container {
   protected id: string;
   protected abortController: LinkedAbortController;
-  protected dependencies: Map<Class<any>, any>;
+  protected dependencies: Map<Tag<any>, any>;
   protected children: Container[];
   protected parent?: Container;
   /**
@@ -44,16 +40,26 @@ export class Container {
   inject<TConstructor extends Class<any>>(
     Constructor: TConstructor,
     ...args: TConstructor extends Class<any, infer TArgs> ? TArgs : []
+  ): TConstructor extends Class<infer TInstance> ? TInstance : never;
+
+  inject<TTag extends Tag<any>>(
+    tag: TTag extends Tag<infer TTarget> ? TTarget : never,
+    ...args: TTag extends Tag<any, infer TArgs> ? TArgs : []
+  ): TTag extends Tag<infer TTarget> ? TTarget : never;
+
+  inject<TConstructor extends Class<any>>(
+    Constructor: TConstructor,
+    ...args: TConstructor extends Class<any, infer TArgs> ? TArgs : []
   ): TConstructor extends Class<infer TInstance> ? TInstance : never {
-    const injectConfig = this.getInjectConfig(Constructor);
+    const tag = this.getTag(Constructor);
 
     const currentContainer = this.path.at(-1) ?? this;
 
-    if (!injectConfig) {
+    if (!tag) {
       throw new Error(`Class ${Constructor.name} is not registered for DI`);
     }
 
-    switch (injectConfig.scope) {
+    switch (tag.injectConfig.scope) {
       case 'singleton': {
         const resolved = rootContainer.get(Constructor);
 
@@ -62,10 +68,10 @@ export class Container {
         }
 
         const instance = rootContainer.createInstance(
-          Constructor,
+          tag,
           args,
           rootContainer,
-          injectConfig.__,
+          tag.injectConfig.__,
         );
 
         return instance;
@@ -90,10 +96,10 @@ export class Container {
     }
 
     const instance = this.createInstance(
-      Constructor,
+      tag,
       args,
       currentContainer,
-      injectConfig.__,
+      tag.injectConfig.__,
     );
 
     return instance;
@@ -101,38 +107,40 @@ export class Container {
 
   register<TConstructor extends Class<any>>(
     Constructor: TConstructor,
-    config?: InjectRegisterConfig,
+    config?: Omit<TagDetailedConfig<TConstructor>, 'token'>,
   ): Tag<TConstructor extends Class<infer TInstance> ? TInstance : never>;
 
   register<TTarget>(target: TagConfig<TTarget>): Tag<TTarget>;
 
   register(constructorOrTagConfig: any, config?: any): any {
     if (typeof constructorOrTagConfig === 'function') {
-      Object.assign(constructorOrTagConfig, {
-        [mark]: config || defaultInjectRegisterConfig,
-      });
-
-      return Tag.create({
-        value: Symbol(),
-        metaData: constructorOrTagConfig,
-      });
+      const tag = Tag.create(constructorOrTagConfig, { ...config });
+      return tag;
     }
 
-    return Tag.create(constructorOrTagConfig);
+    const { token, ...tagConfig } = constructorOrTagConfig || {};
+
+    return Tag.create(token, tagConfig);
   }
 
   get<TConstructor extends Class<any>>(
     Constructor: TConstructor,
   ): (TConstructor extends Class<infer TInstance> ? TInstance : never) | null {
-    if (this.dependencies.has(Constructor)) {
-      return this.dependencies.get(Constructor)!;
+    const tag = Tag.research(Constructor);
+
+    if (!tag) {
+      return null;
+    }
+
+    if (this.dependencies.has(tag)) {
+      return this.dependencies.get(tag)!;
     }
 
     let instance: any = null;
 
     for (const child of this.children) {
-      if (child.dependencies.has(Constructor)) {
-        instance = child.dependencies.get(Constructor)!;
+      if (child.dependencies.has(tag)) {
+        instance = child.dependencies.get(tag)!;
       }
     }
 
@@ -140,7 +148,7 @@ export class Container {
   }
 
   isInjectable(Constructor: Class<any>) {
-    return !!this.getInjectConfig(Constructor);
+    return !!this.getTag(Constructor);
   }
 
   protected extend(config?: Partial<Omit<ContainerConfig, 'parent' | 'id'>>) {
@@ -169,12 +177,8 @@ export class Container {
     return container;
   }
 
-  protected getInjectConfig(Constructor: Class<any>) {
-    if (mark in Constructor) {
-      return Constructor[mark] as InjectRegisterConfig;
-    }
-
-    return null;
+  protected getTag(value: any) {
+    return Tag.research(value);
   }
 
   protected getContainerFromInstance(instance: any) {
@@ -186,7 +190,7 @@ export class Container {
   }
 
   protected createInstance(
-    Constructor: Class<any, any[]>,
+    tag: Tag<any>,
     args: any[],
     parent: Container,
     config?: Partial<ContainerConfig>,
@@ -195,11 +199,13 @@ export class Container {
 
     const index = this.path.push(container) - 1;
 
-    const instance = new Constructor(...args);
+    const instance = tag.createValue(...args);
 
-    instance[mark] = container;
+    if (tag.strategy === 'class-constructor') {
+      instance[mark] = container;
+    }
 
-    container.dependencies.set(Constructor, instance);
+    container.dependencies.set(tag, instance);
 
     this.path.splice(index);
 

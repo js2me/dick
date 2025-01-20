@@ -182,4 +182,20 @@ describe('Container', () => {
     expect(Dog.contstructorSpy).toBeCalledTimes(1);
     expect(ContainerMock.contstructorSpy).toBeCalledTimes(5);
   });
+
+  it('tag (simple)', () => {
+    const ContainerMock = createContainerMock();
+    const container = new ContainerMock({
+      containerConstructor: ContainerMock,
+    });
+    const { register, inject } = container;
+
+    type Kek = 1;
+
+    const tag = register<Kek>({
+      value: () => 1,
+    });
+
+    expect(inject(tag)).toBe(1);
+  });
 });

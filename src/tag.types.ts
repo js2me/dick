@@ -1,14 +1,19 @@
-import { AnyObject } from 'yummies/utils/types';
+import { Class } from 'yummies/utils/types';
+
+import { InjectRegisterConfig } from './container.types';
 
 export type TagSimpleConfig<TTarget> = (string | symbol) & {
   __REF__?: TTarget;
 };
 
-export interface TagDetailedConfig<TTarget> {
-  value?: TagSimpleConfig<TTarget>;
-  metaData?: AnyObject;
+export interface TagDetailedConfig<TTarget, TArgs extends any[] = any[]>
+  extends InjectRegisterConfig {
+  token?: TagSimpleConfig<TTarget> | Class<TTarget>;
+  meta?: any;
+  value?: (...args: TArgs) => TTarget;
+  strategy?: 'class-constructor' | 'token';
 }
 
-export type TagConfig<TTarget> =
-  | TagSimpleConfig<TTarget>
-  | TagDetailedConfig<TTarget>;
+export type TagConfig<TTarget, TArgs extends any[] = any[]> =
+  | TagDetailedConfig<TTarget, TArgs>
+  | TagSimpleConfig<TTarget>;
