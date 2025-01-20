@@ -51,9 +51,9 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
     return this.config.token as TTarget;
   }
 
-  static create<TTarget>(
-    token?: Exclude<TagDetailedConfig<TTarget>['token'], undefined>,
-    config?: Omit<TagDetailedConfig<TTarget>, 'token'>,
+  static create<TTarget, TArgs extends any[] = any[]>(
+    token?: Exclude<TagDetailedConfig<TTarget, TArgs>['token'], undefined>,
+    config?: Omit<TagDetailedConfig<TTarget, TArgs>, 'token'>,
   ) {
     return new Tag({
       ...config,
