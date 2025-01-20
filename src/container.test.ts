@@ -1,7 +1,8 @@
 import { LinkedAbortController } from 'linked-abort-controller';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Container, ContainerConfig } from '.';
+import { Container } from './container.js';
+import { ContainerConfig } from './container.types.js';
 
 const createContainerMock = () => {
   const counter = (() => {
@@ -34,7 +35,7 @@ const createContainerMock = () => {
   };
 };
 
-describe('test', () => {
+describe('Container', () => {
   it('register test', () => {
     const ContainerMock = createContainerMock();
     const container = new ContainerMock({
