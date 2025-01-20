@@ -4,6 +4,8 @@ import { LinkedAbortController } from 'linked-abort-controller';
 import { Class, Maybe } from 'yummies/utils/types';
 
 import { ContainerConfig, InjectRegisterConfig } from './container.types.js';
+import { Tag } from './tag.js';
+import { TagConfig } from './tag.types.js';
 
 const mark = Symbol('di');
 
@@ -53,7 +55,7 @@ export class Container {
 
     switch (injectConfig.scope) {
       case 'singleton': {
-        const resolved = rootContainer.resolve(Constructor);
+        const resolved = rootContainer.get(Constructor);
 
         if (resolved) {
           return resolved;
@@ -73,7 +75,7 @@ export class Container {
         let treeContainer: Maybe<Container> = currentContainer;
 
         while (treeContainer) {
-          const resolved = treeContainer.resolve(Constructor);
+          const resolved = treeContainer.get(Constructor);
           if (resolved) {
             return resolved;
           }
@@ -100,15 +102,26 @@ export class Container {
   register<TConstructor extends Class<any>>(
     Constructor: TConstructor,
     config?: InjectRegisterConfig,
-  ): TConstructor {
-    Object.assign(Constructor, {
-      [mark]: config || defaultInjectRegisterConfig,
-    });
+  ): Tag<TConstructor extends Class<infer TInstance> ? TInstance : never>;
 
-    return Constructor;
+  register<TTarget>(target: TagConfig<TTarget>): Tag<TTarget>;
+
+  register(constructorOrTagConfig: any, config?: any): any {
+    if (typeof constructorOrTagConfig === 'function') {
+      Object.assign(constructorOrTagConfig, {
+        [mark]: config || defaultInjectRegisterConfig,
+      });
+
+      return Tag.create({
+        value: Symbol(),
+        metaData: constructorOrTagConfig,
+      });
+    }
+
+    return Tag.create(constructorOrTagConfig);
   }
 
-  resolve<TConstructor extends Class<any>>(
+  get<TConstructor extends Class<any>>(
     Constructor: TConstructor,
   ): (TConstructor extends Class<infer TInstance> ? TInstance : never) | null {
     if (this.dependencies.has(Constructor)) {

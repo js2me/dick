@@ -6,6 +6,9 @@ postBuildScript({
   srcDirName: 'src',
   filesToCopy: ['LICENSE', 'README.md'],
   updateVersion: process.env.PUBLISH_VERSION,
+  filterExportsPathFn: (path) => {
+    return path !== 'index'; 
+  },
   onDone: (versionsDiff, _, packageJson, { targetPackageJson }) => {
     if (process.env.PUBLISH) {
       publishScript({
