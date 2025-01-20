@@ -1,6 +1,6 @@
 {
-  "name": "dikit",
-  "version": "0.0.2",
+  "name": "mobidic",
+  "version": "0.0.1",
   "scripts": {
     "clean": "rimraf dist",
     "lint:check": "eslint . --fix",
@@ -24,12 +24,12 @@
   "description": "",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/js2me/dikit/issues"
+    "url": "https://github.com/js2me/mobidic/issues"
   },
-  "homepage": "https://github.com/js2me/dikit",
+  "homepage": "https://github.com/js2me/mobidic",
   "repository": {
     "type": "git",
-    "url": "git://github.com/js2me/dikit"
+    "url": "git://github.com/js2me/mobidic"
   },
   "dependencies": {
     "linked-abort-controller": "^1.0.4",

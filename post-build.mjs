@@ -14,7 +14,7 @@ postBuildScript({
         publishCommand: 'pnpm publish',
         commitAllCurrentChanges: true,
         createTag: true,
-        githubRepoLink: 'https://github.com/js2me/dikit',
+        githubRepoLink: 'https://github.com/js2me/mobidic',
         cleanupCommand: 'pnpm clean', 
         targetPackageJson
       })
