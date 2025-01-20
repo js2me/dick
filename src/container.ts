@@ -219,7 +219,10 @@ export class Container {
 
     let targetToDestroy;
 
-    if (instance instanceof Container) {
+    if (instance == null) {
+      // eslint-disable-next-line unicorn/no-this-assignment, @typescript-eslint/no-this-alias
+      targetToDestroy = this;
+    } else if (instance instanceof Container) {
       targetToDestroy = instance;
     } else {
       targetToDestroy = this.getContainerFromInstance(instance) ?? this;
