@@ -44,7 +44,7 @@ export class Container {
     this.children = [];
 
     this.abortController.signal.addEventListener('abort', () => {
-      this.dispose();
+      this.destroy();
     });
 
     this.inject = this.inject.bind(this);
@@ -176,6 +176,14 @@ export class Container {
     return null;
   }
 
+  protected getContainerFromInstance(instance: any) {
+    if (mark in instance) {
+      return instance[mark] as Container;
+    }
+
+    return null;
+  }
+
   protected createInstance(
     Constructor: Class<any, any[]>,
     args: any[],
@@ -197,9 +205,23 @@ export class Container {
     return instance;
   }
 
-  dispose() {
-    this.dependencies.clear();
-    delete this.parent;
+  destroy(instance?: any) {
+    if (!instance && !this.parent) {
+      throw new Error('You can destroy root container, please pass instance');
+    }
+
+    let targetToDestroy;
+
+    if (instance instanceof Container) {
+      targetToDestroy = instance;
+    } else {
+      targetToDestroy = this.getContainerFromInstance(instance) ?? this;
+    }
+
+    targetToDestroy.dependencies.clear();
+    targetToDestroy.children.forEach((child) => child.destroy());
+
+    delete targetToDestroy.parent;
   }
 }
 
