@@ -227,7 +227,15 @@ export class Container {
     targetToDestroy.dependencies.clear();
     targetToDestroy.children.forEach((child) => child.destroy());
 
-    delete targetToDestroy.parent;
+    if (targetToDestroy.parent) {
+      const thisIndexInParent = targetToDestroy.parent.children.indexOf(this);
+
+      if (thisIndexInParent !== -1) {
+        targetToDestroy.parent.children.splice(thisIndexInParent, 1);
+      }
+
+      delete targetToDestroy.parent;
+    }
   }
 }
 
