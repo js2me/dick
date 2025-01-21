@@ -1,11 +1,11 @@
 import { InjectRegisterConfig } from './container.types';
-import { TagConfig, TagDetailedConfig } from './tag.types';
+import { TagConfig, TagDetailedConfig, TagStrategy } from './tag.types';
 
 const mark = Symbol('di-tag');
 
 export class Tag<TTarget, TArgs extends any[] = any[]> {
   injectConfig: InjectRegisterConfig;
-  strategy: 'class-constructor' | 'token';
+  strategy: TagStrategy;
   config: TagDetailedConfig<TTarget>;
 
   protected constructor(configOrToken: TagConfig<TTarget, TArgs>) {
@@ -16,23 +16,42 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
             token: configOrToken,
           };
 
-    if (this.config.strategy) {
-      this.strategy = this.config.strategy;
-    } else if (typeof this.config.token === 'function') {
-      this.strategy = 'class-constructor';
-      this.config.classConstructor = this.config.token;
-    } else if (this.config.classConstructor) {
-      this.strategy = 'class-constructor';
-    } else {
-      this.strategy = 'token';
-    }
+    this.strategy = this.defineStrategy();
+    this.injectConfig = this.defineInjectConfig();
 
-    this.injectConfig = {
+    this.processConfig();
+  }
+
+  private defineInjectConfig(): InjectRegisterConfig {
+    return {
       __: this.config.__,
       scope: this.config.scope ?? 'transient',
     };
+  }
+
+  private defineStrategy(): TagStrategy {
+    if (this.config.strategy) {
+      return this.config.strategy;
+    } else if (
+      typeof this.config.token === 'function' ||
+      this.config.classConstructor
+    ) {
+      return 'class-constructor';
+    } else {
+      return 'token';
+    }
+  }
+
+  private processConfig() {
+    if (this.config.classConstructor && mark in this.config.classConstructor) {
+      delete this.config.classConstructor[mark];
+    }
 
     if (this.strategy === 'class-constructor') {
+      if (typeof this.config.token === 'function') {
+        this.config.classConstructor = this.config.token;
+      }
+
       Object.defineProperty(this.config.classConstructor!, mark, {
         value: this,
         configurable: false,
@@ -78,5 +97,14 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
     }
 
     return null;
+  }
+
+  override(update: Partial<TagDetailedConfig<TTarget>>) {
+    Object.assign(this.config, update);
+
+    this.strategy = this.defineStrategy();
+    this.injectConfig = this.defineInjectConfig();
+
+    this.processConfig();
   }
 }
