@@ -120,11 +120,6 @@ describe('Container', () => {
       ContaineredEntity,
     );
     expect(mainContainerExpect._dependencies[1]).toBeInstanceOf(Main);
-
-    // expect(mainContainerExpect._children.length).toBe(3);
-    // expect(mainContainerExpect._children[0]._dependencies.length).toBe(1);
-    // expect(mainContainerExpect._children[1]._dependencies.length).toBe(1);
-    // expect(mainContainerExpect._children[2]._dependencies.length).toBe(1);
   });
 
   it('complex', () => {
