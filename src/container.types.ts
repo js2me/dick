@@ -2,10 +2,10 @@ import { Class } from 'yummies/utils/types';
 
 import { Container } from './container.js';
 
-export interface ContainerConfig {
+export interface ContainerConfig<TContainerInstance = any> {
   abortSignal?: AbortSignal;
   parent?: Container;
-  containerConstructor?: Class<any>;
+  containerConstructor?: Class<TContainerInstance>;
   id?: string;
   generateId?: () => string;
 }

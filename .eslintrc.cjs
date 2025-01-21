@@ -5,6 +5,7 @@ module.exports = {
   rules: {
     'unicorn/prevent-abbreviations': 'off',
     'sonarjs/no-redundant-optional': 'off',
-    'sonarjs/deprecation': 'off'
+    'sonarjs/deprecation': 'off',
+    'sonarjs/todo-tag': 'warn'
   },
 };

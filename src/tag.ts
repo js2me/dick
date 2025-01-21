@@ -1,7 +1,7 @@
 import { InjectRegisterConfig } from './container.types';
 import { TagConfig, TagDetailedConfig } from './tag.types';
 
-const mark = Symbol('di');
+const mark = Symbol('di-tag');
 
 export class Tag<TTarget, TArgs extends any[] = any[]> {
   injectConfig: InjectRegisterConfig;
@@ -33,8 +33,11 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
     };
 
     if (this.strategy === 'class-constructor') {
-      Object.assign(this.config.classConstructor!, {
-        [mark]: this,
+      Object.defineProperty(this.config.classConstructor!, mark, {
+        value: this,
+        configurable: false,
+        writable: false,
+        enumerable: false,
       });
     }
   }

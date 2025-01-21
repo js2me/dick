@@ -7,9 +7,9 @@ import { ContainerConfig } from './container.types.js';
 import { Tag } from './tag.js';
 import { TagConfig, TagDetailedConfig } from './tag.types.js';
 
-const mark = Symbol('di');
+const mark = Symbol('di-container');
 
-export class Container {
+export class Container<TContainerInstance = any> {
   protected id: string;
   protected abortController: LinkedAbortController;
   protected dependencies: Map<Tag<any>, any>;
@@ -20,7 +20,7 @@ export class Container {
    */
   protected path: Container[];
 
-  constructor(private config?: ContainerConfig) {
+  constructor(private config?: ContainerConfig<TContainerInstance>) {
     this.path = [];
     this.id = config?.id ?? config?.generateId?.() ?? crypto.randomUUID();
     this.abortController = new LinkedAbortController(config?.abortSignal);
@@ -119,7 +119,7 @@ export class Container {
     return Tag.create(token, tagConfig);
   }
 
-  get<TConstructor extends Class<any>>(
+  private get<TConstructor extends Class<any>>(
     Constructor: TConstructor,
   ): (TConstructor extends Class<infer TInstance> ? TInstance : never) | null {
     const tag = Tag.research(Constructor);
@@ -154,7 +154,7 @@ export class Container {
     if (config?.containerConstructor) {
       ContainerConstructor = config.containerConstructor;
     } else if (this.config?.containerConstructor) {
-      ContainerConstructor = this.config.containerConstructor;
+      ContainerConstructor = this.config.containerConstructor as any;
     } else {
       ContainerConstructor = Container;
     }
@@ -177,9 +177,9 @@ export class Container {
     return Tag.research(value);
   }
 
-  protected getContainerFromInstance(instance: any) {
+  protected getContainer<T extends Container = Container>(instance: any) {
     if (mark in instance) {
-      return instance[mark] as Container;
+      return instance[mark] as T;
     }
 
     return null;
@@ -188,10 +188,10 @@ export class Container {
   protected createInstance(
     tag: Tag<any>,
     args: any[],
-    parent: Container,
+    currentContainer: Container,
     config?: Partial<ContainerConfig>,
   ) {
-    const container = parent.extend(config);
+    const container = currentContainer.extend(config);
 
     const index = this.path.push(container) - 1;
 
@@ -206,7 +206,7 @@ export class Container {
       });
     }
 
-    parent.dependencies.set(tag, instance);
+    container.dependencies.set(tag, instance);
 
     this.path.splice(index);
 
@@ -215,7 +215,7 @@ export class Container {
 
   // eslint-disable-next-line sonarjs/cognitive-complexity
   destroy(instance?: any) {
-    let destroyTarget: Container | null;
+    let destroyTarget: Container;
 
     if (instance == null) {
       // eslint-disable-next-line unicorn/no-this-assignment, @typescript-eslint/no-this-alias
@@ -223,20 +223,20 @@ export class Container {
     } else if (instance instanceof Container) {
       destroyTarget = instance;
     } else {
-      destroyTarget = this.getContainerFromInstance(instance) ?? this;
+      destroyTarget = this.getContainer(instance) ?? this;
     }
 
     if (destroyTarget === rootContainer) {
       throw new Error("You can't destroy root container, please pass instance");
     }
 
-    destroyTarget.dependencies.forEach((dependency) => {
-      this.destroy(dependency);
-    });
+    // destroyTarget.dependencies.forEach((dependency) => {
+    //   destroyTarget.destroy(dependency);
+    // });
 
     destroyTarget.dependencies.clear();
 
-    while (destroyTarget && destroyTarget.dependencies.size === 0) {
+    while (destroyTarget) {
       while (destroyTarget.children.length > 0) {
         const child = destroyTarget.children.shift();
         child?.destroy();
@@ -253,18 +253,30 @@ export class Container {
         const parentDepsMap = destroyTarget.parent.dependencies;
 
         parentDepsMap.forEach((parentDep, tag) => {
-          const dependencyContainer = this.getContainerFromInstance(parentDep);
+          const dependencyContainer = this.getContainer(parentDep);
+
           if (destroyTarget && dependencyContainer === destroyTarget) {
             parentDepsMap.delete(tag);
           }
         });
 
-        if (destroyTarget.parent !== rootContainer) {
+        if (destroyTarget.parent === rootContainer) {
+          return;
+        } else {
+          console.info(
+            'setting next destroy target',
+            destroyTarget.parent.id,
+            'was',
+            destroyTarget.id,
+          );
+          const destroyedTarget = destroyTarget;
+
           destroyTarget = destroyTarget.parent;
+
+          delete destroyedTarget.parent;
         }
-        delete destroyTarget.parent;
       } else {
-        destroyTarget = null;
+        return;
       }
     }
   }

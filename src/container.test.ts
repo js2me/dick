@@ -10,10 +10,10 @@ const createContainerMock = () => {
     return () => ++counter;
   })();
 
-  return class ContainerMock extends Container {
+  return class ContainerMock extends Container<ContainerMock> {
     static readonly contstructorSpy = vi.fn();
 
-    constructor(config?: ContainerConfig) {
+    constructor(config?: ContainerConfig<ContainerMock>) {
       super({
         ...config,
         generateId: () => `${counter()}`,
@@ -21,20 +21,20 @@ const createContainerMock = () => {
       ContainerMock.contstructorSpy();
     }
 
-    getChildren(): ContainerMock[] {
+    get _children(): ContainerMock[] {
       return this.children as any[];
     }
 
-    getParent() {
+    get _parent() {
       return this.parent as ContainerMock | undefined;
     }
 
-    getDependencies() {
-      return this.dependencies;
+    get _dependencies() {
+      return [...this.dependencies.values()];
     }
 
-    _getContainerFromInstance(instance: any) {
-      return super.getContainerFromInstance(instance);
+    _findContainer(instance: any) {
+      return super.getContainer<ContainerMock>(instance);
     }
   };
 };
@@ -109,13 +109,14 @@ describe('Container', () => {
 
     expect(main.transient1.singleton).toBe(main.transient2.singleton);
 
-    expect(container.getParent()).toBeUndefined();
-    expect(container.getChildren()).toHaveLength(1); // Container for Main
-    expect(container.getDependencies().size).toBe(1);
+    expect(container._parent).toBeUndefined();
+    expect(container._children).toHaveLength(1); // Container for Main
+    expect(container._dependencies.length).toBe(0);
 
-    const mainContainerExpect = container.getChildren()[0];
+    const mainContainerExpect = container._children[0];
 
-    expect(mainContainerExpect.getDependencies().size).toBe(3);
+    expect(mainContainerExpect._dependencies.length).toBe(1);
+    expect(mainContainerExpect._dependencies[0]).toBeInstanceOf(Main);
   });
 
   it('complex', () => {
@@ -225,18 +226,58 @@ describe('Container', () => {
     container.register(Deep5, { scope: 'container' });
 
     const deep5 = container.inject(Deep5);
+    const deep5Container = container._findContainer(deep5)!;
+
+    const collections = {
+      deep5: {
+        instance: deep5,
+        container: deep5Container,
+      },
+      deep4: {
+        instance: deep5Container._children[0]._dependencies[0] as Deep4,
+        container: deep5Container._children[0],
+      },
+      deep3: {
+        instance: deep5Container._children[0]._children[0]
+          ._dependencies[0] as Deep3,
+        container: deep5Container._children[0]._children[0],
+      },
+      deep2: {
+        instance: deep5Container._children[0]._children[0]._children[0]
+          ._dependencies[0] as Deep2,
+        container: deep5Container._children[0]._children[0]._children[0],
+      },
+      deep1: {
+        instance: deep5Container._children[0]._children[0]._children[0]
+          ._children[0]._dependencies[0] as Deep2,
+        container:
+          deep5Container._children[0]._children[0]._children[0]._children[0],
+      },
+    };
 
     deep5.destroy();
 
-    const deep5Container = container._getContainerFromInstance(
-      deep5,
-    )! as typeof container;
+    expect(collections.deep1.container._dependencies.length).toBe(0);
+    expect(collections.deep1.container._children.length).toBe(0);
+    expect(collections.deep1.container._parent).toBeUndefined();
 
-    expect(container.getChildren().length).toBe(0);
-    expect(container.getDependencies().size).toBe(0);
+    expect(collections.deep2.container._dependencies.length).toBe(0);
+    expect(collections.deep2.container._children.length).toBe(0);
+    expect(collections.deep2.container._parent).toBeUndefined();
 
-    expect(deep5Container.getChildren().length).toBe(0);
-    expect(deep5Container.getDependencies().size).toBe(0);
+    expect(collections.deep3.container._dependencies.length).toBe(0);
+    expect(collections.deep3.container._children.length).toBe(0);
+    expect(collections.deep3.container._parent).toBeUndefined();
+
+    expect(collections.deep4.container._dependencies.length).toBe(0);
+    expect(collections.deep4.container._children.length).toBe(0);
+    expect(collections.deep4.container._parent).toBeUndefined();
+
+    expect(collections.deep5.container._dependencies.length).toBe(0);
+    expect(collections.deep5.container._children.length).toBe(0);
+    expect(collections.deep5.container._parent).toBeUndefined();
+
+    expect(container._children.length).toBe(0);
   });
 
   it('tag (simple)', () => {
