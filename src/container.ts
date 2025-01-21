@@ -106,7 +106,9 @@ export class Container<TContainerInstance = any> {
     config?: Omit<TagDetailedConfig<TConstructor>, 'token'>,
   ): Tag<TConstructor extends Class<infer TInstance> ? TInstance : never>;
 
-  register<TTarget>(target: TagConfig<TTarget>): Tag<TTarget>;
+  register<TTarget, TArgs extends any[] = any[]>(
+    target: TagConfig<TTarget, TArgs>,
+  ): Tag<TTarget>;
 
   register(constructorOrTagConfig: any, config?: any): any {
     if (typeof constructorOrTagConfig === 'function') {
