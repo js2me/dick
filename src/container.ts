@@ -108,7 +108,7 @@ export class Container<TContainerInstance = any> {
 
   register<TTarget, TArgs extends any[] = any[]>(
     target: TagConfig<TTarget, TArgs>,
-  ): Tag<TTarget>;
+  ): Tag<TTarget, TArgs>;
 
   register(constructorOrTagConfig: any, config?: any): any {
     if (typeof constructorOrTagConfig === 'function') {
