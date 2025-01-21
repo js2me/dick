@@ -1,6 +1,5 @@
 /* eslint-disable no-prototype-builtins */
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { LinkedAbortController } from 'linked-abort-controller';
 import { Class, Maybe } from 'yummies/utils/types';
 
 import { ContainerConfig } from './container.types.js';
@@ -11,7 +10,6 @@ const mark = Symbol('di-container');
 
 export class Container<TContainerInstance = any> {
   protected id: string;
-  protected abortController: LinkedAbortController;
   protected dependencies: Map<Tag<any>, any>;
   protected children: Container[];
   protected parent?: Container;
@@ -23,14 +21,9 @@ export class Container<TContainerInstance = any> {
   constructor(private config?: ContainerConfig<TContainerInstance>) {
     this.path = [];
     this.id = config?.id ?? config?.generateId?.() ?? crypto.randomUUID();
-    this.abortController = new LinkedAbortController(config?.abortSignal);
     this.dependencies = new Map();
     this.parent = config?.parent;
     this.children = [];
-
-    this.abortController.signal.addEventListener('abort', () => {
-      this.destroy();
-    });
   }
 
   inject<TConstructor extends Class<any>>(
@@ -174,7 +167,6 @@ export class Container<TContainerInstance = any> {
     });
 
     container.path = this.path;
-    container.abortController.link(this.abortController.signal);
 
     this.children.push(container);
 
