@@ -1,6 +1,7 @@
 import { Class } from 'yummies/utils/types';
 
 import { InjectRegisterConfig } from './container.types';
+import { Tag } from './tag';
 
 export type TagSimpleConfig<TTarget> = (string | symbol) & {
   __REF__?: TTarget;
@@ -21,3 +22,9 @@ export interface TagDetailedConfig<TTarget, TArgs extends any[] = any[]>
 export type TagConfig<TTarget, TArgs extends any[] = any[]> =
   | TagDetailedConfig<TTarget, TArgs>
   | TagSimpleConfig<TTarget>;
+
+export type InferTagParams<T> =
+  T extends Tag<any, infer TParams> ? TParams : never;
+
+export type InferTagTarget<T> =
+  T extends Tag<infer TTarget, any> ? TTarget : never;
