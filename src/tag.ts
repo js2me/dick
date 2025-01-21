@@ -6,7 +6,7 @@ const mark = Symbol('di-tag');
 export class Tag<TTarget, TArgs extends any[] = any[]> {
   injectConfig: InjectRegisterConfig;
   strategy: TagStrategy;
-  config: TagDetailedConfig<TTarget>;
+  config: TagDetailedConfig<TTarget, TArgs>;
 
   protected constructor(configOrToken: TagConfig<TTarget, TArgs>) {
     this.config =
@@ -61,7 +61,7 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
     }
   }
 
-  createValue(...args: any[]): TTarget {
+  createValue(...args: TArgs): TTarget {
     if (this.strategy === 'class-constructor') {
       return new this.config.classConstructor!(...args);
     }
@@ -71,6 +71,10 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
     }
 
     return this.config.token as TTarget;
+  }
+
+  destroyValue(value: TTarget) {
+    this.config.destroy?.(value);
   }
 
   static create<TTarget, TArgs extends any[] = any[]>(

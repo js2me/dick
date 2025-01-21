@@ -231,6 +231,7 @@ export class Container<TContainerInstance = any> {
       throw new Error("You can't destroy root container, please pass instance");
     }
 
+    destroyTarget.dependencies.forEach((value, tag) => tag.destroyValue(value));
     destroyTarget.dependencies.clear();
 
     while (destroyTarget) {

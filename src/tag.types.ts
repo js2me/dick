@@ -12,9 +12,10 @@ export interface TagDetailedConfig<TTarget, TArgs extends any[] = any[]>
   extends InjectRegisterConfig {
   token?: TagSimpleConfig<TTarget> | Class<TTarget, TArgs>;
   meta?: any;
-  value?: (...args: TArgs) => TTarget;
   classConstructor?: Class<TTarget, TArgs>;
   strategy?: TagStrategy;
+  value?: (...args: TArgs) => TTarget;
+  destroy?: (value: TTarget) => void;
 }
 
 export type TagConfig<TTarget, TArgs extends any[] = any[]> =
