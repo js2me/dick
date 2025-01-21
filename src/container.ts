@@ -63,12 +63,7 @@ export class Container<TContainerInstance = any> {
           return resolved;
         }
 
-        const instance = rootContainer.createInstance(
-          tag,
-          args,
-          rootContainer,
-          tag.injectConfig.__,
-        );
+        const instance = rootContainer.createInstance(tag, args, rootContainer);
 
         return instance;
       }
@@ -84,7 +79,17 @@ export class Container<TContainerInstance = any> {
           treeContainer = treeContainer.parent;
         }
 
-        break;
+        if (this.path.length > 0) {
+          return this.createInstance(tag, args, currentContainer);
+        } else {
+          return this.createInstance(
+            tag,
+            args,
+            currentContainer.extend(
+              (tag.injectConfig.__ || {}) as Partial<ContainerConfig>,
+            ),
+          );
+        }
       }
       default: {
         break;
@@ -94,8 +99,9 @@ export class Container<TContainerInstance = any> {
     const instance = this.createInstance(
       tag,
       args,
-      currentContainer,
-      tag.injectConfig.__,
+      currentContainer.extend(
+        (tag.injectConfig.__ || {}) as Partial<ContainerConfig>,
+      ),
     );
 
     return instance;
@@ -187,14 +193,7 @@ export class Container<TContainerInstance = any> {
     return null;
   }
 
-  protected createInstance(
-    tag: Tag<any>,
-    args: any[],
-    currentContainer: Container,
-    config?: Partial<ContainerConfig>,
-  ) {
-    const container = currentContainer.extend(config);
-
+  protected createInstance(tag: Tag<any>, args: any[], container: Container) {
     const index = this.path.push(container) - 1;
 
     const instance = tag.createValue(...args);

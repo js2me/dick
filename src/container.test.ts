@@ -71,7 +71,7 @@ describe('Container', () => {
     class SingletonEntity {}
     container.register(SingletonEntity, {
       scope: 'singleton',
-      __: { id: 'signleton' },
+      __: { id: 'singleton' },
     });
 
     class ContaineredEntity {}
@@ -115,8 +115,16 @@ describe('Container', () => {
 
     const mainContainerExpect = container._children[0];
 
-    expect(mainContainerExpect._dependencies.length).toBe(1);
-    expect(mainContainerExpect._dependencies[0]).toBeInstanceOf(Main);
+    expect(mainContainerExpect._dependencies.length).toBe(2);
+    expect(mainContainerExpect._dependencies[0]).toBeInstanceOf(
+      ContaineredEntity,
+    );
+    expect(mainContainerExpect._dependencies[1]).toBeInstanceOf(Main);
+
+    // expect(mainContainerExpect._children.length).toBe(3);
+    // expect(mainContainerExpect._children[0]._dependencies.length).toBe(1);
+    // expect(mainContainerExpect._children[1]._dependencies.length).toBe(1);
+    // expect(mainContainerExpect._children[2]._dependencies.length).toBe(1);
   });
 
   it('complex', () => {
@@ -177,7 +185,7 @@ describe('Container', () => {
     expect(AbortController.contstructorSpy).toBeCalledTimes(1);
     expect(AnimalDetails.contstructorSpy).toBeCalledTimes(2);
     expect(Dog.contstructorSpy).toBeCalledTimes(1);
-    expect(ContainerMock.contstructorSpy).toBeCalledTimes(5);
+    expect(ContainerMock.contstructorSpy).toBeCalledTimes(4);
   });
 
   it('destroy', () => {
@@ -191,7 +199,7 @@ describe('Container', () => {
         container.destroy(this);
       }
     }
-    container.register(Deep1, { scope: 'container' });
+    container.register(Deep1, { scope: 'transient' });
 
     class Deep2 {
       deep1 = container.inject(Deep1);
@@ -199,7 +207,7 @@ describe('Container', () => {
         container.destroy(this);
       }
     }
-    container.register(Deep2, { scope: 'container' });
+    container.register(Deep2, { scope: 'transient' });
 
     class Deep3 {
       deep3 = container.inject(Deep2);
@@ -207,7 +215,7 @@ describe('Container', () => {
         container.destroy(this);
       }
     }
-    container.register(Deep3, { scope: 'container' });
+    container.register(Deep3, { scope: 'transient' });
 
     class Deep4 {
       deep3 = container.inject(Deep3);
@@ -215,7 +223,7 @@ describe('Container', () => {
         container.destroy(this);
       }
     }
-    container.register(Deep4, { scope: 'container' });
+    container.register(Deep4, { scope: 'transient' });
 
     class Deep5 {
       deep4 = container.inject(Deep4);
@@ -223,7 +231,7 @@ describe('Container', () => {
         container.destroy(this);
       }
     }
-    container.register(Deep5, { scope: 'container' });
+    container.register(Deep5, { scope: 'transient' });
 
     const deep5 = container.inject(Deep5);
     const deep5Container = container._findContainer(deep5)!;
