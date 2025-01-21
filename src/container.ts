@@ -259,12 +259,6 @@ export class Container<TContainerInstance = any> {
         if (destroyTarget.parent === rootContainer) {
           return;
         } else {
-          console.info(
-            'setting next destroy target',
-            destroyTarget.parent.id,
-            'was',
-            destroyTarget.id,
-          );
           const destroyedTarget = destroyTarget;
 
           destroyTarget = destroyTarget.parent;
