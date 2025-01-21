@@ -7,6 +7,7 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
   injectConfig: InjectRegisterConfig;
   strategy: TagStrategy;
   config: TagDetailedConfig<TTarget, TArgs>;
+  references: Set<TTarget>;
 
   protected constructor(configOrToken: TagConfig<TTarget, TArgs>) {
     this.config =
@@ -16,6 +17,7 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
             token: configOrToken,
           };
 
+    this.references = new Set<TTarget>();
     this.strategy = this.defineStrategy();
     this.injectConfig = this.defineInjectConfig();
 
@@ -74,6 +76,7 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
   }
 
   destroyValue(value: TTarget) {
+    this.references.delete(value);
     this.config.destroy?.(value);
   }
 

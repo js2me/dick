@@ -185,9 +185,9 @@ export class Container<TContainerInstance = any> {
     return Tag.research(value);
   }
 
-  protected getContainer<T extends Container = Container>(instance: any) {
-    if (mark in instance) {
-      return instance[mark] as T;
+  protected getContainer<T extends Container = Container>(value: any) {
+    if (value && mark in value) {
+      return value[mark] as T;
     }
 
     return null;
@@ -210,6 +210,8 @@ export class Container<TContainerInstance = any> {
     container.dependencies.set(tag, instance);
 
     this.path.splice(index);
+
+    tag.references.add(instance);
 
     return instance;
   }
@@ -250,8 +252,8 @@ export class Container<TContainerInstance = any> {
 
         const parentDepsMap = destroyTarget.parent.dependencies;
 
-        parentDepsMap.forEach((parentDep, tag) => {
-          const dependencyContainer = this.getContainer(parentDep);
+        parentDepsMap.forEach((value, tag) => {
+          const dependencyContainer = this.getContainer(value);
 
           if (destroyTarget && dependencyContainer === destroyTarget) {
             parentDepsMap.delete(tag);
