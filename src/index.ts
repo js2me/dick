@@ -4,6 +4,7 @@
 import { rootContainer, Container } from './container.js';
 import { ContainerConfig } from './container.types.js';
 import { Tag } from './tag.js';
+import { TagConfig } from './tag.types.js';
 
 export const container = rootContainer;
 
@@ -12,5 +13,5 @@ export const register = container.register.bind(container);
 export const destroy = container.destroy.bind(container);
 export const tag = Tag.create;
 
-export { Container };
-export type { ContainerConfig };
+export { Container, Tag };
+export type { ContainerConfig, TagConfig };
