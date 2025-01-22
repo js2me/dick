@@ -1,6 +1,6 @@
 /* eslint-disable no-prototype-builtins */
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { Class, Maybe } from 'yummies/utils/types';
+import { AnyObject, Class, Maybe } from 'yummies/utils/types';
 
 import { ContainerConfig } from './container.types.js';
 import { Tag } from './tag.js';
@@ -50,7 +50,8 @@ export class Container<TContainerInstance = any> {
 
     switch (tag.injectConfig.scope) {
       case 'singleton': {
-        const resolved = rootContainer.get(Constructor);
+        const resolved =
+          rootContainer.get<InstanceType<TConstructor>>(Constructor);
 
         if (resolved) {
           return resolved;
@@ -65,7 +66,8 @@ export class Container<TContainerInstance = any> {
         let treeContainer: Maybe<Container> = currentContainer;
 
         while (treeContainer) {
-          const resolved = treeContainer.get(Constructor);
+          const resolved =
+            treeContainer.get<InstanceType<TConstructor>>(Constructor);
           if (resolved) {
             return resolved;
           }
@@ -120,10 +122,8 @@ export class Container<TContainerInstance = any> {
     return Tag.create(token, tagConfig);
   }
 
-  private get<TConstructor extends Class<any>>(
-    Constructor: TConstructor,
-  ): (TConstructor extends Class<infer TInstance> ? TInstance : never) | null {
-    const tag = Tag.research(Constructor);
+  get<TTarget extends AnyObject>(value: any): TTarget | null {
+    const tag = Tag.research(value);
 
     if (!tag) {
       return null;
