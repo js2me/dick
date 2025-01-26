@@ -6,6 +6,10 @@ module.exports = {
     'unicorn/prevent-abbreviations': 'off',
     'sonarjs/no-redundant-optional': 'off',
     'sonarjs/deprecation': 'off',
-    'sonarjs/todo-tag': 'warn'
+    'sonarjs/todo-tag': 'warn',
+    'unicorn/no-this-assignment': 'off',
+    'sonarjs/assertions-in-tests': 'off',
+    '@typescript-eslint/no-this-alias': 'off',
+    'sonarjs/no-commented-code': 'off'
   },
 };

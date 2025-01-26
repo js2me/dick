@@ -1,34 +1,78 @@
-import { InjectRegisterConfig } from './container.types';
-import { TagConfig, TagDetailedConfig, TagStrategy } from './tag.types';
+import { Class } from 'yummies/utils/types';
 
-const mark = Symbol('di-tag');
+import { tagMark } from './constants.js';
+import { TagConfig, TagScope, TagStrategy } from './tag.types.js';
+import { Destroyable } from './types.js';
 
-export class Tag<TTarget, TArgs extends any[] = any[]> {
-  injectConfig: InjectRegisterConfig;
+declare const process: { env: { NODE_ENV?: string } };
+
+export class Tag<TTarget, TArgs extends any[] = any[]>
+  implements Destroyable, Disposable
+{
   strategy: TagStrategy;
-  config: TagDetailedConfig<TTarget, TArgs>;
+  config: TagConfig<TTarget, TArgs>;
   references: Set<TTarget>;
+  token: Exclude<TagConfig<TTarget, TArgs>['token'], undefined>;
+  scope: TagScope;
 
-  protected constructor(configOrToken: TagConfig<TTarget, TArgs>) {
-    this.config =
-      typeof configOrToken === 'object'
-        ? configOrToken
-        : {
-            token: configOrToken,
-          };
-
+  protected constructor(config: TagConfig<TTarget, TArgs>) {
+    this.config = config;
+    this.scope = this.defineScope();
+    this.token = this.defineToken();
     this.references = new Set<TTarget>();
     this.strategy = this.defineStrategy();
-    this.injectConfig = this.defineInjectConfig();
 
     this.processConfig();
   }
 
-  private defineInjectConfig(): InjectRegisterConfig {
-    return {
-      __: this.config.__,
-      scope: this.config.scope ?? 'transient',
-    };
+  createValue(args: TArgs): TTarget {
+    let value: TTarget;
+
+    if (this.strategy === 'class-constructor') {
+      value = new this.config.classConstructor!(...args);
+    } else if (this.config.value) {
+      return this.config.value(...args);
+    } else {
+      throw new Error('value definition is not provided for tag');
+    }
+
+    this.references.add(value);
+
+    return value;
+  }
+
+  destroyValue(value: TTarget) {
+    this.references.delete(value);
+    this.config.destroy?.(value);
+  }
+
+  override(update: Partial<TagConfig<TTarget, TArgs>>) {
+    Object.assign(this.config, update);
+
+    this.scope = this.defineScope();
+    this.token = this.defineToken();
+    this.strategy = this.defineStrategy();
+
+    this.processConfig();
+  }
+
+  destroy() {
+    this.references.forEach((reference) => {
+      this.destroyValue(reference);
+    });
+    this.references.clear();
+  }
+
+  [Symbol.dispose](): void {
+    this.destroy();
+  }
+
+  private defineScope() {
+    return this.config.scope ?? 'transient';
+  }
+
+  private defineToken() {
+    return this.config.token ?? Symbol();
   }
 
   private defineStrategy(): TagStrategy {
@@ -45,8 +89,11 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
   }
 
   private processConfig() {
-    if (this.config.classConstructor && mark in this.config.classConstructor) {
-      delete this.config.classConstructor[mark];
+    if (
+      this.config.classConstructor &&
+      tagMark in this.config.classConstructor
+    ) {
+      delete this.config.classConstructor[tagMark];
     }
 
     if (this.strategy === 'class-constructor') {
@@ -54,7 +101,7 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
         this.config.classConstructor = this.config.token;
       }
 
-      Object.defineProperty(this.config.classConstructor!, mark, {
+      Object.defineProperty(this.config.classConstructor!, tagMark, {
         value: this,
         configurable: false,
         writable: false,
@@ -63,55 +110,36 @@ export class Tag<TTarget, TArgs extends any[] = any[]> {
     }
   }
 
-  createValue(...args: TArgs): TTarget {
-    if (this.strategy === 'class-constructor') {
-      return new this.config.classConstructor!(...args);
-    }
+  static search<TClass extends Class<any>>(
+    Class: TClass,
+  ): Tag<TClass extends Class<infer Value> ? Value : never> | null;
+  static search<TTarget = any>(tag: Tag<TTarget>): Tag<TTarget> | null;
 
-    if (this.config.value) {
-      return this.config.value(...args);
-    }
-
-    return this.config.token as TTarget;
-  }
-
-  destroyValue(value: TTarget) {
-    this.references.delete(value);
-    this.config.destroy?.(value);
-  }
-
-  static create<TTarget, TArgs extends any[] = any[]>(
-    token?: Exclude<TagDetailedConfig<TTarget, TArgs>['token'], undefined>,
-    config?: Omit<TagDetailedConfig<TTarget, TArgs>, 'token'>,
-  ) {
-    return new Tag<TTarget, TArgs>({
-      ...config,
-      token,
-    });
-  }
-
-  static research<TTarget = any>(value: any): Tag<TTarget> | null {
+  static search(value: any) {
     if (value instanceof Tag) {
       return value;
     }
 
     if (
       typeof value === 'function' &&
-      mark in value &&
-      value[mark] instanceof Tag
+      tagMark in value &&
+      value[tagMark] instanceof Tag
     ) {
-      return value[mark];
+      return value[tagMark];
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('tag not found for', value);
     }
 
     return null;
   }
 
-  override(update: Partial<TagDetailedConfig<TTarget>>) {
-    Object.assign(this.config, update);
-
-    this.strategy = this.defineStrategy();
-    this.injectConfig = this.defineInjectConfig();
-
-    this.processConfig();
+  static create<TTarget, TArgs extends any[] = any[]>(
+    config: TagConfig<TTarget, TArgs>,
+  ) {
+    return new Tag<TTarget, TArgs>(config);
   }
 }
+
+export const tag = Tag.create;

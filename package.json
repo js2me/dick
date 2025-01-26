@@ -38,6 +38,7 @@
   "devDependencies": {
     "@types/node": "^20.17.11",
     "@vitejs/plugin-react-swc": "^3.7.2",
+    "@vitest/coverage-istanbul": "3.0.1",
     "eslint": "^8.57.1",
     "js2me-eslint-config": "^1.0.7",
     "js2me-exports-post-build-script": "^2.0.17",

@@ -1,271 +1,167 @@
-/* eslint-disable no-prototype-builtins */
-/* eslint-disable @typescript-eslint/no-use-before-define */
-import { AnyObject, Class, Maybe } from 'yummies/utils/types';
+import { Class, Maybe } from 'yummies/utils/types';
 
-import { ContainerConfig } from './container.types.js';
+import { containerMark } from './constants.js';
 import { Tag } from './tag.js';
-import { TagConfig, TagDetailedConfig } from './tag.types.js';
+import { AnyTag } from './tag.types.js';
+import { Destroyable } from './types.js';
 
-const mark = Symbol('di-container');
+export class Container implements Destroyable, Disposable {
+  injections = new Map<AnyTag, any>();
+  inheritInjections = new WeakMap<AnyTag, any>();
+  parent?: Container;
+  children = new Set<Container>();
 
-export class Container<TContainerInstance = any> {
-  protected id: string;
-  protected dependencies: Map<Tag<any>, any>;
-  protected children: Container[];
-  protected parent?: Container;
-  /**
-   * Полный путь исполнения контейнера
-   */
-  protected path: Container[];
+  private static readonly transitPath: Container[] = [];
 
-  constructor(private config?: ContainerConfig<TContainerInstance>) {
-    this.path = [];
-    this.id = config?.id ?? config?.generateId?.() ?? crypto.randomUUID();
-    this.dependencies = new Map();
-    this.parent = config?.parent;
-    this.children = [];
+  constructor(parent?: Container) {
+    this.parent = parent;
   }
 
-  inject<TConstructor extends Class<any>>(
-    Constructor: TConstructor,
-    ...args: TConstructor extends Class<any, infer TArgs> ? TArgs : []
-  ): TConstructor extends Class<infer TInstance> ? TInstance : never;
+  inject<TTarget, TArgs extends any[] = any[]>(
+    classConstructor: Class<TTarget, TArgs>,
+    ...args: TArgs
+  ): TTarget;
 
-  inject<TTag extends Tag<any>>(
-    tag: TTag,
-    ...args: TTag extends Tag<any, infer TArgs> ? TArgs : []
-  ): TTag extends Tag<infer TTarget> ? TTarget : never;
+  inject<TTarget, TArgs extends any[] = any[]>(
+    tag: Tag<TTarget, TArgs>,
+    ...args: TArgs
+  ): TTarget;
 
-  inject<TConstructor extends Class<any>>(
-    Constructor: TConstructor,
-    ...args: TConstructor extends Class<any, infer TArgs> ? TArgs : []
-  ): TConstructor extends Class<infer TInstance> ? TInstance : never {
-    const tag = this.getTag(Constructor);
-
-    const currentContainer = this.path.at(-1) ?? this;
+  // eslint-disable-next-line sonarjs/cognitive-complexity
+  inject(firstArg: any, ...args: any[]): any {
+    const tag = Tag.search(firstArg);
 
     if (!tag) {
-      throw new Error(`Class ${Constructor.name} is not registered for DI`);
+      throw new Error('tag not found');
     }
 
-    switch (tag.injectConfig.scope) {
-      case 'singleton': {
-        const resolved =
-          rootContainer.get<InstanceType<TConstructor>>(Constructor);
+    let container: Container = this;
 
-        if (resolved) {
-          return resolved;
-        }
+    const lastContainer = Container.transitPath.at(-1);
 
-        const instance = rootContainer.createInstance(tag, args, rootContainer);
+    let transitPathIndex: Maybe<number>;
 
-        return instance;
-      }
-      case 'container': {
-        // eslint-disable-next-line unicorn/no-this-assignment, @typescript-eslint/no-this-alias
-        let treeContainer: Maybe<Container> = currentContainer;
+    if (tag.scope === 'container') {
+      const parentContainer = lastContainer ?? this;
 
-        while (treeContainer) {
-          const resolved =
-            treeContainer.get<InstanceType<TConstructor>>(Constructor);
-          if (resolved) {
-            return resolved;
-          }
-          treeContainer = treeContainer.parent;
-        }
+      container = parentContainer.extend();
 
-        if (this.path.length > 0) {
-          return this.createInstance(tag, args, currentContainer);
-        } else {
-          return this.createInstance(
-            tag,
-            args,
-            currentContainer.extend(
-              (tag.injectConfig.__ || {}) as Partial<ContainerConfig>,
-            ),
-          );
-        }
-      }
-      default: {
-        break;
-      }
+      transitPathIndex = Container.transitPath.push(container) - 1;
     }
 
-    const instance = this.createInstance(
-      tag,
-      args,
-      currentContainer.extend(
-        (tag.injectConfig.__ || {}) as Partial<ContainerConfig>,
-      ),
-    );
-
-    return instance;
-  }
-
-  register<TConstructor extends Class<any>>(
-    Constructor: TConstructor,
-    config?: Omit<TagDetailedConfig<TConstructor>, 'token'>,
-  ): Tag<TConstructor extends Class<infer TInstance> ? TInstance : never>;
-
-  register<TTarget, TArgs extends any[] = any[]>(
-    target: TagConfig<TTarget, TArgs>,
-  ): Tag<TTarget, TArgs>;
-
-  register(constructorOrTagConfig: any, config?: any): any {
-    if (typeof constructorOrTagConfig === 'function') {
-      const tag = Tag.create(constructorOrTagConfig, { ...config });
-      return tag;
+    if (tag.scope === 'transient' && lastContainer) {
+      container = lastContainer;
     }
 
-    const { token, ...tagConfig } = constructorOrTagConfig || {};
+    let injection: any;
 
-    return Tag.create(token, tagConfig);
-  }
-
-  get<TTarget extends AnyObject>(value: any): TTarget | null {
-    const tag = Tag.research(value);
-
-    if (!tag) {
-      return null;
-    }
-
-    if (this.dependencies.has(tag)) {
-      return this.dependencies.get(tag)!;
-    }
-
-    let instance: any = null;
-
-    for (const child of this.children) {
-      if (child.dependencies.has(tag)) {
-        instance = child.dependencies.get(tag)!;
-      }
-    }
-
-    return instance;
-  }
-
-  isInjectable(Constructor: Class<any>) {
-    return !!this.getTag(Constructor);
-  }
-
-  protected extend(config?: Partial<Omit<ContainerConfig, 'parent' | 'id'>>) {
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    let ContainerConstructor: typeof Container;
-
-    if (config?.containerConstructor) {
-      ContainerConstructor = config.containerConstructor;
-    } else if (this.config?.containerConstructor) {
-      ContainerConstructor = this.config.containerConstructor as any;
+    if (container.inheritInjections.has(tag)) {
+      injection = container.inheritInjections.get(tag)!;
+    } else if (container.injections.has(tag)) {
+      injection = container.injections.get(tag)!;
     } else {
-      ContainerConstructor = Container;
+      let inheritInjection: any;
+
+      if (tag.scope === 'container') {
+        for (let i = Container.transitPath.length - 1; i >= 0; i--) {
+          const container = Container.transitPath[i];
+          if (container.injections.has(tag)) {
+            inheritInjection = container.injections.get(tag)!;
+            break;
+          }
+
+          for (const child of container.children) {
+            if (child.injections.has(tag)) {
+              inheritInjection = child.injections.get(tag)!;
+              break;
+            }
+          }
+        }
+      }
+
+      if (inheritInjection) {
+        container.inheritInjections.set(tag, inheritInjection);
+      } else {
+        injection = tag.createValue(args);
+        container.injections.set(tag, injection);
+      }
     }
 
-    const container = new ContainerConstructor({
-      ...this.config,
-      ...config,
-      parent: this,
-    });
-
-    container.path = this.path;
-
-    this.children.push(container);
-
-    return container;
-  }
-
-  protected getTag(value: any) {
-    return Tag.research(value);
-  }
-
-  protected getContainer<T extends Container = Container>(value: any) {
-    if (value && mark in value) {
-      return value[mark] as T;
-    }
-
-    return null;
-  }
-
-  protected createInstance(tag: Tag<any>, args: any[], container: Container) {
-    const index = this.path.push(container) - 1;
-
-    const instance = tag.createValue(...args);
-
-    if (tag.strategy === 'class-constructor') {
-      Object.defineProperty(instance, mark, {
+    if (!(containerMark in injection)) {
+      Object.defineProperty(injection!, containerMark, {
         value: container,
         configurable: false,
         writable: false,
         enumerable: false,
       });
     }
+    if (tag.scope === 'container' && typeof transitPathIndex === 'number') {
+      Container.transitPath.splice(transitPathIndex, 1);
+    }
 
-    container.dependencies.set(tag, instance);
-
-    this.path.splice(index);
-
-    tag.references.add(instance);
-
-    return instance;
+    return injection;
   }
 
-  // eslint-disable-next-line sonarjs/cognitive-complexity
-  destroy(instance?: any) {
-    let destroyTarget: Container;
+  get<TTarget, TArgs extends any[] = any[]>(tag: Tag<TTarget, TArgs>): TTarget {
+    const value = this.injections.get(tag) ?? this.inheritInjections.get(tag);
 
-    if (instance == null) {
-      // eslint-disable-next-line unicorn/no-this-assignment, @typescript-eslint/no-this-alias
-      destroyTarget = this;
-    } else if (instance instanceof Container) {
-      destroyTarget = instance;
+    if (!value) {
+      throw new Error('value not found');
+    }
+
+    return value;
+  }
+
+  extend() {
+    const child = new Container(this);
+    this.children.add(child);
+    return child;
+  }
+
+  destroy(value?: any) {
+    const containersToDestroy: Container[] = [];
+
+    if (value) {
+      const valueBasedContainer = Container.search(value);
+      if (valueBasedContainer) {
+        containersToDestroy.push(valueBasedContainer);
+      }
     } else {
-      destroyTarget = this.getContainer(instance) ?? this;
+      containersToDestroy.push(this);
     }
 
-    if (destroyTarget === rootContainer) {
-      throw new Error("You can't destroy root container, please pass instance");
+    while (containersToDestroy.length > 0) {
+      const container = containersToDestroy.shift()!;
+
+      container.parent?.children.delete(container);
+
+      containersToDestroy.push(...container.children.values());
+
+      container.injections.forEach((value, tag) => {
+        tag.destroyValue(value);
+      });
+      container.injections.clear();
+    }
+  }
+
+  static search(value: any): Maybe<Container> {
+    if (value[containerMark]) {
+      return value[containerMark];
     }
 
-    destroyTarget.dependencies.forEach((value, tag) => tag.destroyValue(value));
-    destroyTarget.dependencies.clear();
+    return null;
+  }
 
-    while (destroyTarget) {
-      while (destroyTarget.children.length > 0) {
-        const child = destroyTarget.children.shift();
-        child?.destroy();
-      }
-
-      if (destroyTarget.parent) {
-        const thisIndexInParent =
-          destroyTarget.parent.children.indexOf(destroyTarget);
-
-        if (thisIndexInParent !== -1) {
-          destroyTarget.parent.children.splice(thisIndexInParent, 1);
-        }
-
-        const parentDepsMap = destroyTarget.parent.dependencies;
-
-        parentDepsMap.forEach((value, tag) => {
-          const dependencyContainer = this.getContainer(value);
-
-          if (destroyTarget && dependencyContainer === destroyTarget) {
-            parentDepsMap.delete(tag);
-          }
-        });
-
-        if (destroyTarget.parent === rootContainer) {
-          return;
-        } else {
-          const destroyedTarget = destroyTarget;
-
-          destroyTarget = destroyTarget.parent;
-
-          delete destroyedTarget.parent;
-        }
-      } else {
-        return;
-      }
+  static destroy(value: any) {
+    const container = Container.search(value);
+    if (container) {
+      container.destroy();
     }
+  }
+
+  [Symbol.dispose](): void {
+    this.destroy();
   }
 }
 
-export const rootContainer = new Container();
+export const container = new Container();
