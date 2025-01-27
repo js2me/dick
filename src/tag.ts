@@ -5,8 +5,6 @@ import { Container } from './container.js';
 import { TagConfig, TagScope, TagStrategy } from './tag.types.js';
 import { Destroyable } from './types.js';
 
-declare const process: { env: { NODE_ENV?: string } };
-
 export class Tag<TTarget, TArgs extends any[] = any[]>
   implements Destroyable, Disposable
 {
@@ -129,10 +127,6 @@ export class Tag<TTarget, TArgs extends any[] = any[]>
       value[tagMark] instanceof Tag
     ) {
       return value[tagMark];
-    }
-
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('tag not found for', value);
     }
 
     return null;
