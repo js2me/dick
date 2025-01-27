@@ -1,6 +1,7 @@
 import { Class, Maybe } from 'yummies/utils/types';
 
 import { containerMark } from './constants.js';
+import { ContainerConfig } from './container.types.js';
 import { Tag } from './tag.js';
 import { AnyTag } from './tag.types.js';
 import { Destroyable } from './types.js';
@@ -10,11 +11,15 @@ export class Container implements Destroyable, Disposable {
   inheritInjections = new WeakMap<AnyTag, any>();
   parent?: Container;
   children = new Set<Container>();
+  config: ContainerConfig;
 
   private static readonly transitPath: Container[] = [];
 
-  constructor(parent?: Container) {
-    this.parent = parent;
+  constructor(config?: ContainerConfig & { parent?: Container }) {
+    this.parent = config?.parent;
+    this.config = {
+      fallbackTag: config?.fallbackTag,
+    };
   }
 
   inject<TTarget, TArgs extends any[] = any[]>(
@@ -28,15 +33,19 @@ export class Container implements Destroyable, Disposable {
   ): TTarget;
 
   inject(firstArg: any, ...args: any[]): any {
-    const tag = Tag.search(firstArg);
-
-    if (!tag) {
-      throw new Error('tag not found');
-    }
-
     let container: Container = this;
 
     const lastContainer = Container.transitPath.at(-1);
+
+    let tag = Tag.search(firstArg);
+
+    if (!tag) {
+      if (container.config.fallbackTag) {
+        tag = Tag.create(container.config.fallbackTag(firstArg));
+      } else {
+        throw new Error('tag not found');
+      }
+    }
 
     let transitPathIndex: Maybe<number>;
 
@@ -115,8 +124,15 @@ export class Container implements Destroyable, Disposable {
     }
   }
 
+  configure(config: Partial<ContainerConfig>) {
+    Object.assign(this.config, config);
+  }
+
   extend() {
-    const child = new Container(this);
+    const child = new Container({
+      ...this.config,
+      parent: this,
+    });
     this.children.add(child);
     return child;
   }

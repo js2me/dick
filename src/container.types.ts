@@ -1,18 +1,7 @@
-import { Class } from 'yummies/utils/types';
+import { Maybe } from 'yummies/utils/types';
 
-import { Container } from './container.js';
+import { TagConfig } from './tag.types.js';
 
-export interface ContainerConfig<TContainerInstance = any> {
-  abortSignal?: AbortSignal;
-  parent?: Container;
-  containerConstructor?: Class<TContainerInstance>;
-  id?: string;
-  generateId?: () => string;
-}
-
-export interface DebugConfig extends Pick<ContainerConfig, 'id'> {}
-
-export interface InjectRegisterConfig {
-  scope?: 'singleton' | 'transient' | 'container';
-  __?: DebugConfig;
+export interface ContainerConfig {
+  fallbackTag?: Maybe<(value: any) => TagConfig<any, any>>;
 }
