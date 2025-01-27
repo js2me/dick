@@ -33,15 +33,15 @@ export class Container implements Destroyable, Disposable {
   ): TTarget;
 
   inject(firstArg: any, ...args: any[]): any {
-    let container: Container = this;
+    let targetContainer: Container = this;
 
     const lastContainer = Container.transitPath.at(-1);
 
     let tag = Tag.search(firstArg);
 
     if (!tag) {
-      if (container.config.fallbackTag) {
-        tag = Tag.create(container.config.fallbackTag(firstArg));
+      if (targetContainer.config.fallbackTag) {
+        tag = Tag.create(targetContainer.config.fallbackTag(firstArg));
       } else {
         throw new Error('tag not found');
       }
@@ -49,24 +49,32 @@ export class Container implements Destroyable, Disposable {
 
     let transitPathIndex: Maybe<number>;
 
-    if (tag.scope === 'container') {
-      const parentContainer = lastContainer ?? this;
-
-      container = parentContainer.extend();
-
-      transitPathIndex = Container.transitPath.push(container) - 1;
-    }
-
-    if (tag.scope === 'transient' && lastContainer) {
-      container = lastContainer;
+    switch (tag.scope) {
+      case 'container': {
+        const parentContainer = lastContainer ?? this;
+        targetContainer = parentContainer.extend();
+        transitPathIndex = Container.transitPath.push(targetContainer) - 1;
+        break;
+      }
+      case 'singleton': {
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        targetContainer = container;
+        break;
+      }
+      case 'transient': {
+        if (lastContainer) {
+          targetContainer = lastContainer;
+        }
+        break;
+      }
     }
 
     let injection: any;
 
-    if (container.inheritInjections.has(tag)) {
-      injection = container.inheritInjections.get(tag)!;
-    } else if (container.injections.has(tag)) {
-      injection = container.injections.get(tag)!;
+    if (targetContainer.inheritInjections.has(tag)) {
+      injection = targetContainer.inheritInjections.get(tag)!;
+    } else if (targetContainer.injections.has(tag)) {
+      injection = targetContainer.injections.get(tag)!;
     } else {
       let inheritInjection: any;
 
@@ -75,18 +83,18 @@ export class Container implements Destroyable, Disposable {
       }
 
       if (inheritInjection) {
-        container.inheritInjections.set(tag, inheritInjection);
+        targetContainer.inheritInjections.set(tag, inheritInjection);
         injection = inheritInjection;
       } else {
         injection = tag.createValue(args);
-        container.injections.set(tag, injection);
-        tag.containersInUse.add(container);
+        targetContainer.injections.set(tag, injection);
+        tag.containersInUse.add(targetContainer);
       }
     }
 
     if (!(containerMark in injection)) {
       Object.defineProperty(injection!, containerMark, {
-        value: container,
+        value: targetContainer,
         configurable: true,
         writable: false,
         enumerable: false,

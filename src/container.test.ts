@@ -24,21 +24,30 @@ describe('Container', () => {
   it('complex test (values comparison)', () => {
     const container = new ContainerMock();
 
-    class Aborter extends LinkedAbortController {}
+    class Singleton {}
+    new TagMock({ token: Singleton, scope: 'singleton' });
+
+    class Aborter extends LinkedAbortController {
+      singleton = container.inject(Singleton);
+    }
     new TagMock({ token: Aborter, scope: 'container' });
 
     class Transient {
+      singleton = container.inject(Singleton);
+
       constructor(public value: string) {}
     }
     new TagMock({ token: Transient, scope: 'transient' });
 
     class A {
+      singleton = container.inject(Singleton);
       aborter = container.inject(Aborter);
       transient = container.inject(Transient, 'dep-a');
     }
     new TagMock({ token: A, scope: 'container' });
 
     class B {
+      singleton = container.inject(Singleton);
       aborter = container.inject(Aborter);
       a = container.inject(A);
       transient = container.inject(Transient, 'dep-b');
@@ -46,6 +55,7 @@ describe('Container', () => {
     new TagMock({ token: B, scope: 'container' });
 
     class C {
+      singleton = container.inject(Singleton);
       aborter = container.inject(Aborter);
       a = container.inject(A);
       b = container.inject(B);
@@ -60,6 +70,13 @@ describe('Container', () => {
     expect(c.b).toBeInstanceOf(B);
     expect(c.aborter).toBeInstanceOf(Aborter);
     expect(c.transient).toBeInstanceOf(Transient);
+
+    expect(c.singleton).toBeInstanceOf(Singleton);
+    expect(c.a.singleton).toBeInstanceOf(Singleton);
+    expect(c.b.singleton).toBeInstanceOf(Singleton);
+    expect(c.b.a.singleton).toBeInstanceOf(Singleton);
+    expect(c.aborter.singleton).toBeInstanceOf(Singleton);
+    expect(c.transient.singleton).toBeInstanceOf(Singleton);
 
     expect(c.a.aborter).toBeInstanceOf(Aborter);
     expect(c.a.transient).toBeInstanceOf(Transient);
@@ -77,15 +94,23 @@ describe('Container', () => {
     expect(c.b.a.aborter).toBeInstanceOf(Aborter);
     expect(c.b.a.aborter).toBe(c.b.aborter);
     expect(c.b.a.aborter).toBe(c.aborter);
+
+    expect(c.b.a.transient.singleton).toBe(c.singleton);
   });
 
   it('complex test (destroy)', () => {
     const container = new ContainerMock();
 
-    class Aborter extends LinkedAbortController {}
+    class Singleton {}
+    const tagSingleton = new TagMock({ token: Singleton, scope: 'singleton' });
+
+    class Aborter extends LinkedAbortController {
+      singleton = container.inject(Singleton);
+    }
     const tagAborter = new TagMock({ token: Aborter, scope: 'container' });
 
     class Transient {
+      singleton = container.inject(Singleton);
       constructor(public value: string) {}
     }
     const tagTransient = new TagMock({
@@ -94,12 +119,14 @@ describe('Container', () => {
     });
 
     class A {
+      singleton = container.inject(Singleton);
       aborter = container.inject(Aborter);
       transient = container.inject(Transient, 'dep-a');
     }
     const tagA = new TagMock({ token: A, scope: 'container' });
 
     class B {
+      singleton = container.inject(Singleton);
       aborter = container.inject(Aborter);
       a = container.inject(A);
       transient = container.inject(Transient, 'dep-b');
@@ -107,6 +134,7 @@ describe('Container', () => {
     const tagB = new TagMock({ token: B, scope: 'container' });
 
     class C {
+      singleton = container.inject(Singleton);
       aborter = container.inject(Aborter);
       a = container.inject(A);
       b = container.inject(B);
@@ -134,10 +162,14 @@ describe('Container', () => {
     expect(bContainer.isEmpty).toBe(true);
     expect(cContainer.isEmpty).toBe(true);
 
+    expect(tagSingleton.containersInUse.size).toBe(1);
     expect(tagAborter.containersInUse.size).toBe(0);
     expect(tagTransient.containersInUse.size).toBe(0);
     expect(tagA.containersInUse.size).toBe(0);
     expect(tagB.containersInUse.size).toBe(0);
     expect(tagC.containersInUse.size).toBe(0);
+    // expect([...tagSingleton.containersInUse.values()][0]).toBe(container);
+
+    console.info('fff', container.parent);
   });
 });
