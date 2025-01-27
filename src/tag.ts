@@ -145,4 +145,4 @@ export class Tag<TTarget, TArgs extends any[] = any[]>
   }
 }
 
-export const tag = Tag.create;
+export const tag = Tag.create.bind(Tag);
