@@ -78,7 +78,7 @@ export class Container implements Destroyable, Disposable {
     if (!(containerMark in injection)) {
       Object.defineProperty(injection!, containerMark, {
         value: container,
-        configurable: false,
+        configurable: true,
         writable: false,
         enumerable: false,
       });
@@ -122,30 +122,47 @@ export class Container implements Destroyable, Disposable {
   }
 
   destroy(value?: any) {
-    const containersToDestroy: Container[] = [];
+    let rootContainerToDestroy: Container | undefined;
 
     if (value) {
-      const valueBasedContainer = Container.search(value);
-      if (valueBasedContainer) {
-        containersToDestroy.push(valueBasedContainer);
+      const foundContainer = Container.search(value);
+      if (foundContainer) {
+        rootContainerToDestroy = foundContainer;
       }
     } else {
-      containersToDestroy.push(this);
+      rootContainerToDestroy = this;
     }
 
-    while (containersToDestroy.length > 0) {
-      const container = containersToDestroy.shift()!;
+    if (rootContainerToDestroy) {
+      const containersToDestroy: Container[] = [rootContainerToDestroy];
 
-      container.parent?.children.delete(container);
+      while (containersToDestroy.length > 0) {
+        const container = containersToDestroy.shift()!;
 
-      containersToDestroy.push(...container.children.values());
+        container.parent?.children.delete(container);
 
-      container.injections.forEach((value, tag) => {
-        tag.destroyValue(value);
-        tag.containersInUse.delete(container);
-      });
-      container.injections.clear();
+        containersToDestroy.push(...container.children.values());
+
+        container.injections.forEach((value, tag) => {
+          tag.destroyValue(value);
+          tag.containersInUse.delete(container);
+
+          if (Container.search(value) === container) {
+            delete value[containerMark];
+          }
+        });
+        container.injections.clear();
+      }
+
+      const foundContainer = Container.search(value);
+      if (foundContainer?.isEmpty) {
+        delete value[containerMark];
+      }
     }
+  }
+
+  get isEmpty() {
+    return this.injections.size === 0 && this.children.size === 0;
   }
 
   static search(value: any): Maybe<Container> {

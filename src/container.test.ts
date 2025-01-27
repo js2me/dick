@@ -116,13 +116,24 @@ describe('Container', () => {
 
     const c = container.inject(C);
 
-    const cContainer = Container.search(c);
-
-    console.info('cContainer', cContainer);
+    const aContainer = Container.search(c.a)!;
+    const bContainer = Container.search(c.b)!;
+    const cContainer = Container.search(c)!;
 
     container.destroy(c);
 
-    // expect(Container.search(c)).toBeUndefined();
+    expect(Container.search(c)).toBeNull();
+    expect(Container.search(c.a)).toBeNull();
+    expect(Container.search(c.a.aborter)).toBeNull();
+    expect(Container.search(c.b)).toBeNull();
+    expect(Container.search(c.b.aborter)).toBeNull();
+    expect(Container.search(c.b.a)).toBeNull();
+    expect(Container.search(c.aborter)).toBeNull();
+
+    expect(aContainer.isEmpty).toBe(true);
+    expect(bContainer.isEmpty).toBe(true);
+    expect(cContainer.isEmpty).toBe(true);
+
     expect(tagAborter.containersInUse.size).toBe(0);
     expect(tagTransient.containersInUse.size).toBe(0);
     expect(tagA.containersInUse.size).toBe(0);
