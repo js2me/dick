@@ -27,7 +27,6 @@ export class Container implements Destroyable, Disposable {
     ...args: TArgs
   ): TTarget;
 
-  // eslint-disable-next-line sonarjs/cognitive-complexity
   inject(firstArg: any, ...args: any[]): any {
     const tag = Tag.search(firstArg);
 
@@ -63,27 +62,16 @@ export class Container implements Destroyable, Disposable {
       let inheritInjection: any;
 
       if (tag.scope === 'container') {
-        for (let i = Container.transitPath.length - 1; i >= 0; i--) {
-          const container = Container.transitPath[i];
-          if (container.injections.has(tag)) {
-            inheritInjection = container.injections.get(tag)!;
-            break;
-          }
-
-          for (const child of container.children) {
-            if (child.injections.has(tag)) {
-              inheritInjection = child.injections.get(tag)!;
-              break;
-            }
-          }
-        }
+        inheritInjection = Container.getFromTransitPath(tag);
       }
 
       if (inheritInjection) {
         container.inheritInjections.set(tag, inheritInjection);
+        injection = inheritInjection;
       } else {
         injection = tag.createValue(args);
         container.injections.set(tag, injection);
+        tag.containersInUse.add(container);
       }
     }
 
@@ -110,6 +98,21 @@ export class Container implements Destroyable, Disposable {
     }
 
     return value;
+  }
+
+  private static getFromTransitPath(tag: AnyTag): Maybe<Container> {
+    for (let i = this.transitPath.length - 1; i >= 0; i--) {
+      const container = this.transitPath[i];
+      if (container.injections.has(tag)) {
+        return container.injections.get(tag)!;
+      }
+
+      for (const child of container.children) {
+        if (child.injections.has(tag)) {
+          return child.injections.get(tag)!;
+        }
+      }
+    }
   }
 
   extend() {
@@ -139,6 +142,7 @@ export class Container implements Destroyable, Disposable {
 
       container.injections.forEach((value, tag) => {
         tag.destroyValue(value);
+        tag.containersInUse.delete(container);
       });
       container.injections.clear();
     }

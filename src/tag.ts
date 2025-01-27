@@ -1,6 +1,7 @@
 import { Class } from 'yummies/utils/types';
 
 import { tagMark } from './constants.js';
+import { Container } from './container.js';
 import { TagConfig, TagScope, TagStrategy } from './tag.types.js';
 import { Destroyable } from './types.js';
 
@@ -14,12 +15,14 @@ export class Tag<TTarget, TArgs extends any[] = any[]>
   references: Set<TTarget>;
   token: Exclude<TagConfig<TTarget, TArgs>['token'], undefined>;
   scope: TagScope;
+  containersInUse: WeakSet<Container>;
 
-  protected constructor(config: TagConfig<TTarget, TArgs>) {
+  constructor(config: TagConfig<TTarget, TArgs>) {
     this.config = config;
     this.scope = this.defineScope();
     this.token = this.defineToken();
     this.references = new Set<TTarget>();
+    this.containersInUse = new WeakSet();
     this.strategy = this.defineStrategy();
 
     this.processConfig();
@@ -138,7 +141,7 @@ export class Tag<TTarget, TArgs extends any[] = any[]>
   static create<TTarget, TArgs extends any[] = any[]>(
     config: TagConfig<TTarget, TArgs>,
   ) {
-    return new Tag<TTarget, TArgs>(config);
+    return new this<TTarget, TArgs>(config);
   }
 }
 
