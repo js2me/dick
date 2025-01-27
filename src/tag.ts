@@ -109,6 +109,15 @@ export class Tag<TTarget, TArgs extends any[] = any[]>
         enumerable: false,
       });
     }
+
+    if (typeof this.config.value === 'function') {
+      Object.defineProperty(this.config.value!, tagMark, {
+        value: this,
+        configurable: false,
+        writable: false,
+        enumerable: false,
+      });
+    }
   }
 
   static search<TClass extends Class<any>>(
