@@ -110,8 +110,8 @@ export class Tag<TTarget, TArgs extends any[] = any[]>
       });
     }
 
-    if (typeof this.config.value === 'function') {
-      Object.defineProperty(this.config.value!, tagMark, {
+    if (typeof this.token === 'function') {
+      Object.defineProperty(this.token!, tagMark, {
         value: this,
         configurable: false,
         writable: false,
