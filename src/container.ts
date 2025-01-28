@@ -30,27 +30,9 @@ export class Container implements Destroyable, Disposable {
     return this === this.root;
   }
 
-  constructor(config?: ContainerConfig & { parent?: Container }) {
-    this.parent = config?.parent;
-    this.config = {
-      fallbackTag: config?.fallbackTag,
-    };
-  }
-
-  inject<TTarget, TArgs extends any[] = []>(
-    classConstructor: Class<TTarget, TArgs>,
-    ...args: TArgs
-  ): TTarget;
-
-  inject<TTarget, TArgs extends any[] = []>(
-    tag: Tag<TTarget, TArgs>,
-    ...args: TArgs
-  ): TTarget;
-
-  inject(firstArg: any, ...args: any[]): any {
-    let targetContainer: Container = this;
-
-    const lastContainer = Container.transitPath.at(-1);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected resolveTag(firstArg: any, ...args: any[]) {
+    const targetContainer: Container = this;
 
     let tag = Tag.search(firstArg);
 
@@ -66,13 +48,17 @@ export class Container implements Destroyable, Disposable {
       }
     }
 
-    let transitPathIndex: Maybe<number>;
+    return tag;
+  }
+
+  protected resolveTargetContainer(tag: AnyTag) {
+    const lastContainer = Container.transitPath.at(-1);
+    let targetContainer: Container = this;
 
     switch (tag.scope) {
       case 'container': {
         const parentContainer = lastContainer ?? this;
         targetContainer = parentContainer.extend();
-        transitPathIndex = Container.transitPath.push(targetContainer) - 1;
         break;
       }
       case 'singleton': {
@@ -91,6 +77,36 @@ export class Container implements Destroyable, Disposable {
         targetContainer = parentContainer;
         break;
       }
+    }
+
+    return targetContainer;
+  }
+
+  constructor(config?: ContainerConfig & { parent?: Container }) {
+    this.parent = config?.parent;
+    this.config = {
+      fallbackTag: config?.fallbackTag,
+    };
+  }
+
+  inject<TTarget, TArgs extends any[] = []>(
+    classConstructor: Class<TTarget, TArgs>,
+    ...args: TArgs
+  ): TTarget;
+
+  inject<TTarget, TArgs extends any[] = []>(
+    tag: Tag<TTarget, TArgs>,
+    ...args: TArgs
+  ): TTarget;
+
+  inject(firstArg: any, ...args: any[]): any {
+    const tag = this.resolveTag(firstArg, ...args);
+    const targetContainer = this.resolveTargetContainer(tag);
+
+    let transitPathIndex: Maybe<number>;
+
+    if (tag.scope === 'container') {
+      transitPathIndex = Container.transitPath.push(targetContainer) - 1;
     }
 
     let injection: any;
