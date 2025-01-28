@@ -5,7 +5,7 @@ import { Container } from './container.js';
 import { TagConfig, TagScope, TagStrategy } from './tag.types.js';
 import { Destroyable } from './types.js';
 
-export class Tag<TTarget, TArgs extends any[] = any[]>
+export class Tag<TTarget, TArgs extends any[] = []>
   implements Destroyable, Disposable
 {
   strategy: TagStrategy;
@@ -141,7 +141,7 @@ export class Tag<TTarget, TArgs extends any[] = any[]>
     return null;
   }
 
-  static create<TTarget, TArgs extends any[] = any[]>(
+  static create<TTarget, TArgs extends any[] = []>(
     config: TagConfig<TTarget, TArgs>,
   ) {
     return new this<TTarget, TArgs>(config);

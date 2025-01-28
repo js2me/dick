@@ -2,7 +2,7 @@ import { Class, Maybe } from 'yummies/utils/types';
 
 import { containerMark } from './constants.js';
 import { ContainerConfig } from './container.types.js';
-import { Tag } from './tag.js';
+import { tag, Tag } from './tag.js';
 import { AnyTag } from './tag.types.js';
 import { Destroyable } from './types.js';
 
@@ -22,12 +22,12 @@ export class Container implements Destroyable, Disposable {
     };
   }
 
-  inject<TTarget, TArgs extends any[] = any[]>(
+  inject<TTarget, TArgs extends any[] = []>(
     classConstructor: Class<TTarget, TArgs>,
     ...args: TArgs
   ): TTarget;
 
-  inject<TTarget, TArgs extends any[] = any[]>(
+  inject<TTarget, TArgs extends any[] = []>(
     tag: Tag<TTarget, TArgs>,
     ...args: TArgs
   ): TTarget;
@@ -86,7 +86,7 @@ export class Container implements Destroyable, Disposable {
         targetContainer.inheritInjections.set(tag, inheritInjection);
         injection = inheritInjection;
       } else {
-        injection = tag.createValue(args);
+        injection = tag.createValue(args as any);
         targetContainer.injections.set(tag, injection);
         tag.containersInUse.add(targetContainer);
       }
@@ -107,7 +107,7 @@ export class Container implements Destroyable, Disposable {
     return injection;
   }
 
-  get<TTarget, TArgs extends any[] = any[]>(tag: Tag<TTarget, TArgs>): TTarget {
+  get<TTarget, TArgs extends any[] = []>(tag: Tag<TTarget, TArgs>): TTarget {
     const value = this.injections.get(tag) ?? this.inheritInjections.get(tag);
 
     if (!value) {
@@ -213,6 +213,8 @@ export class Container implements Destroyable, Disposable {
       container.destroy();
     }
   }
+
+  register = tag;
 
   [Symbol.dispose](): void {
     this.destroy();

@@ -6,7 +6,7 @@ export type TagStrategy = 'class-constructor' | 'token';
 
 export type TagScope = 'singleton' | 'transient' | 'container';
 
-export interface TagConfig<TTarget, TArgs extends any[] = any[]> {
+export interface TagConfig<TTarget, TArgs extends any[] = []> {
   scope?: TagScope;
   token?: string | symbol | Class<TTarget, TArgs>;
   meta?: any;

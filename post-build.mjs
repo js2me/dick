@@ -7,7 +7,7 @@ postBuildScript({
   filesToCopy: ['LICENSE', 'README.md'],
   updateVersion: process.env.PUBLISH_VERSION,
   filterExportsPathFn: (path) => {
-    return path !== 'index'; 
+    return path !== 'index' && path !== 'decorators/index'; 
   },
   onDone: (versionsDiff, _, packageJson, { targetPackageJson }) => {
     if (process.env.PUBLISH) {

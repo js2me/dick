@@ -9,10 +9,7 @@ import { TagConfig } from './tag.types.js';
 describe('Container', () => {
   class ContainerMock extends Container {}
 
-  class TagMock<TTarget, TArgs extends any[] = any[]> extends Tag<
-    TTarget,
-    TArgs
-  > {
+  class TagMock<TTarget, TArgs extends any[] = []> extends Tag<TTarget, TArgs> {
     containersInUse: Set<Container>;
 
     constructor(config: TagConfig<TTarget, TArgs>) {

@@ -12,8 +12,8 @@ importers:
         specifier: ^1.0.4
         version: 1.0.4
       yummies:
-        specifier: ^3.0.12
-        version: 3.0.12
+        specifier: ^3.0.15
+        version: 3.0.15
     devDependencies:
       '@types/node':
         specifier: ^20.17.11
@@ -3133,8 +3133,8 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  yummies@3.0.12:
-    resolution: {integrity: sha512-IpqjNTPYredHevnyQE2p20lzz4hecp7tNU25Dz+gG0fVwKyQw/DnhBCISBcZRifUVWwSKBvLeFkxR0ZwYOI8xQ==}
+  yummies@3.0.15:
+    resolution: {integrity: sha512-AfkrWuy8Jtu9MNIlZJHJzjNKBRBd+mN9yqGHsoyW/8SmraIztkSKP0QVPNPuQRgKYFeUgORumjSY6XJH3YSEtQ==}
 
 snapshots:
 
@@ -6665,7 +6665,7 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  yummies@3.0.12:
+  yummies@3.0.15:
     dependencies:
       '@types/insane': 1.0.0
       '@types/lodash-es': 4.17.12
