@@ -145,6 +145,16 @@ export class Container implements Destroyable, Disposable {
     return child;
   }
 
+  bind(value: any) {
+    const container = Container.search(value);
+
+    if (!container) {
+      throw new Error('container not found');
+    }
+
+    return container;
+  }
+
   destroy(value?: any) {
     let rootContainerToDestroy: Container | undefined;
 
