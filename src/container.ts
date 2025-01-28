@@ -26,6 +26,10 @@ export class Container implements Destroyable, Disposable {
     return parent.root;
   }
 
+  get isRoot() {
+    return this === this.root;
+  }
+
   constructor(config?: ContainerConfig & { parent?: Container }) {
     this.parent = config?.parent;
     this.config = {
@@ -83,7 +87,9 @@ export class Container implements Destroyable, Disposable {
         break;
       }
       case 'resolution': {
-        targetContainer = Container.lastTouchedContainer ?? this;
+        const parentContainer = lastContainer ?? this;
+        targetContainer = parentContainer;
+        break;
       }
     }
 
