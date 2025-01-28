@@ -16,6 +16,16 @@ export class Container implements Destroyable, Disposable {
   private static readonly transitPath: Container[] = [];
   private static lastTouchedContainer?: Container;
 
+  get root(): Container {
+    const parent = this.parent;
+
+    if (!parent) {
+      return this;
+    }
+
+    return parent.root;
+  }
+
   constructor(config?: ContainerConfig & { parent?: Container }) {
     this.parent = config?.parent;
     this.config = {
@@ -63,7 +73,7 @@ export class Container implements Destroyable, Disposable {
       }
       case 'singleton': {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        targetContainer = container;
+        targetContainer = this.root;
         break;
       }
       case 'transient': {
