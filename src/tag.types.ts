@@ -4,7 +4,7 @@ import { Tag } from './tag.js';
 
 export type TagStrategy = 'class-constructor' | 'token';
 
-export type TagScope = 'singleton' | 'transient' | 'container';
+export type TagScope = 'singleton' | 'transient' | 'container' | 'resolution';
 
 export interface TagConfig<TTarget, TArgs extends any[] = []> {
   scope?: TagScope;

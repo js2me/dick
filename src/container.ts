@@ -14,6 +14,7 @@ export class Container implements Destroyable, Disposable {
   config: ContainerConfig;
 
   private static readonly transitPath: Container[] = [];
+  private static lastTouchedContainer?: Container;
 
   constructor(config?: ContainerConfig & { parent?: Container }) {
     this.parent = config?.parent;
@@ -67,9 +68,14 @@ export class Container implements Destroyable, Disposable {
         }
         break;
       }
+      case 'resolution': {
+        targetContainer = Container.lastTouchedContainer ?? this;
+      }
     }
 
     let injection: any;
+
+    Container.lastTouchedContainer = targetContainer;
 
     if (targetContainer.inheritInjections.has(tag)) {
       injection = targetContainer.inheritInjections.get(tag)!;
@@ -186,6 +192,10 @@ export class Container implements Destroyable, Disposable {
           }
         });
         container.injections.clear();
+
+        if (Container.lastTouchedContainer === container) {
+          Container.lastTouchedContainer = undefined;
+        }
       }
 
       const foundContainer = Container.search(value);
