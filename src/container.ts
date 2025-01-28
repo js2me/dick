@@ -42,7 +42,11 @@ export class Container implements Destroyable, Disposable {
 
     if (!tag) {
       if (targetContainer.config.fallbackTag) {
-        tag = Tag.create(targetContainer.config.fallbackTag(firstArg));
+        const newTagOrConfig = targetContainer.config.fallbackTag(firstArg);
+        tag =
+          newTagOrConfig instanceof Tag
+            ? newTagOrConfig
+            : Tag.create(newTagOrConfig);
       } else {
         throw new Error('tag not found');
       }
