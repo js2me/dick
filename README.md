@@ -1,6 +1,6 @@
 <img src="assets/logo.png" align="right" height="156" alt="logo" />
 
-# Dependency Injection Container
+# Mobidic - Dependency Injection Container  
 
 [![NPM version][npm-image]][npm-url] [![build status][github-build-actions-image]][github-actions-url] [![npm download][download-image]][download-url] [![bundle size][bundlephobia-image]][bundlephobia-url]
 
@@ -14,3 +14,13 @@
 [bundlephobia-url]: https://bundlephobia.com/result?p=mobidic
 [bundlephobia-image]: https://badgen.net/bundlephobia/minzip/mobidic
 
+
+
+```ts
+import { container } from 'mobidic'
+
+class Fruits {}
+container.register({ token: Fruits })
+
+container.inject(Fruits)
+```
