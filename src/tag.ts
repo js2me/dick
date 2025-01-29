@@ -2,7 +2,7 @@ import { Class } from 'yummies/utils/types';
 
 import { tagMark } from './constants.js';
 import { Container } from './container.js';
-import { TagConfig, TagScope, TagStrategy } from './tag.types.js';
+import { AnyTag, TagConfig, TagScope, TagStrategy } from './tag.types.js';
 import { Destroyable } from './types.js';
 
 export class Tag<TTarget, TArgs extends any[] = []>
@@ -24,6 +24,8 @@ export class Tag<TTarget, TArgs extends any[] = []>
     this.strategy = this.defineStrategy();
 
     this.processConfig();
+
+    Tag.tagsSet.add(this);
   }
 
   createValue(args: TArgs): TTarget {
@@ -140,6 +142,8 @@ export class Tag<TTarget, TArgs extends any[] = []>
 
     return null;
   }
+
+  static readonly tagsSet = new WeakSet<AnyTag>();
 
   static create<TTarget, TArgs extends any[] = []>(
     config: TagConfig<TTarget, TArgs>,
