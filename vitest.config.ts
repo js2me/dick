@@ -1,9 +1,8 @@
 import { defineConfig } from "vitest/config";
-import react from "@vitejs/plugin-react-swc";
-
+import swc from 'unplugin-swc';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [swc.vite({})], 
   test: {
     globals: true,
     environment: "jsdom",
