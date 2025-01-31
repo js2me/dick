@@ -1,19 +1,19 @@
 import { Class } from 'yummies/utils/types';
 
-import { tag } from '../tag.js';
-import { TagConfig } from '../tag.types.js';
+import { token } from '../token.js';
+import { TokenConfig } from '../token.types.js';
 
 export const injectable =
   <T extends Class<any>>(
     config: Omit<
-      TagConfig<T extends Class<infer TValue> ? TValue : any>,
-      'token'
+      TokenConfig<T extends Class<infer TValue> ? TValue : any>,
+      'key'
     >,
   ) =>
   (ClassConstructor: T): T => {
-    tag({
+    token({
       ...config,
-      token: ClassConstructor,
+      key: ClassConstructor,
     });
     return ClassConstructor as unknown as T;
   };

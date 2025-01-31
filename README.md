@@ -1,6 +1,6 @@
 <img src="assets/logo.png" align="right" height="156" alt="logo" />
 
-# Mobidic - Dependency Injection Container  
+# Mobidic - Dependency Injection Container (WIP)  
 
 [![NPM version][npm-image]][npm-url] [![build status][github-build-actions-image]][github-actions-url] [![npm download][download-image]][download-url] [![bundle size][bundlephobia-image]][bundlephobia-url]
 
@@ -20,7 +20,7 @@
 import { container } from 'mobidic'
 
 class Fruits {}
-container.register({ token: Fruits })
+container.register(Fruits, { scope: 'transient' })
 
 container.inject(Fruits)
 ```

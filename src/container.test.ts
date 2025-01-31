@@ -4,16 +4,19 @@ import { describe, expect, it } from 'vitest';
 
 import { Container } from './container.js';
 import { injectable as injectableLib } from './decorators/injectable.js';
-import { Tag } from './tag.js';
-import { TagConfig } from './tag.types.js';
+import { Token } from './token.js';
+import { TokenConfig } from './token.types.js';
 
 describe('Container', () => {
   class ContainerMock extends Container {}
 
-  class TagMock<TTarget, TArgs extends any[] = []> extends Tag<TTarget, TArgs> {
+  class TokenMock<TValue, TArgs extends any[] = []> extends Token<
+    TValue,
+    TArgs
+  > {
     containersInUse: Set<Container>;
 
-    constructor(config: TagConfig<TTarget, TArgs>) {
+    constructor(config: TokenConfig<TValue, TArgs>) {
       super(config);
       this.containersInUse = new Set();
     }
@@ -23,26 +26,26 @@ describe('Container', () => {
     const container = new ContainerMock();
 
     class Singleton {}
-    new TagMock({ token: Singleton, scope: 'singleton' });
+    new TokenMock({ key: Singleton, scope: 'singleton' });
 
     class Aborter extends LinkedAbortController {
       singleton = container.inject(Singleton);
     }
-    new TagMock({ token: Aborter, scope: 'container' });
+    new TokenMock({ key: Aborter, scope: 'container' });
 
     class Transient {
       singleton = container.inject(Singleton);
 
       constructor(public value: string) {}
     }
-    new TagMock({ token: Transient, scope: 'transient' });
+    new TokenMock({ key: Transient, scope: 'transient' });
 
     class A {
       singleton = container.inject(Singleton);
       aborter = container.inject(Aborter);
       transient = container.inject(Transient, 'dep-a');
     }
-    new TagMock({ token: A, scope: 'container' });
+    new TokenMock({ key: A, scope: 'container' });
 
     class B {
       singleton = container.inject(Singleton);
@@ -50,7 +53,7 @@ describe('Container', () => {
       a = container.inject(A);
       transient = container.inject(Transient, 'dep-b');
     }
-    new TagMock({ token: B, scope: 'container' });
+    new TokenMock({ key: B, scope: 'container' });
 
     class C {
       singleton = container.inject(Singleton);
@@ -59,7 +62,7 @@ describe('Container', () => {
       b = container.inject(B);
       transient = container.inject(Transient, 'dep-c');
     }
-    new TagMock({ token: C, scope: 'container' });
+    new TokenMock({ key: C, scope: 'container' });
 
     const c = container.inject(C);
 
@@ -100,19 +103,22 @@ describe('Container', () => {
     const container = new ContainerMock();
 
     class Singleton {}
-    const tagSingleton = new TagMock({ token: Singleton, scope: 'singleton' });
+    const tokenSingleton = new TokenMock({
+      key: Singleton,
+      scope: 'singleton',
+    });
 
     class Aborter extends LinkedAbortController {
       singleton = container.inject(Singleton);
     }
-    const tagAborter = new TagMock({ token: Aborter, scope: 'container' });
+    const tokenAborter = new TokenMock({ key: Aborter, scope: 'container' });
 
     class Transient {
       singleton = container.inject(Singleton);
       constructor(public value: string) {}
     }
-    const tagTransient = new TagMock({
-      token: Transient,
+    const tokenTransient = new TokenMock({
+      key: Transient,
       scope: 'transient',
     });
 
@@ -121,7 +127,7 @@ describe('Container', () => {
       aborter = container.inject(Aborter);
       transient = container.inject(Transient, 'dep-a');
     }
-    const tagA = new TagMock({ token: A, scope: 'container' });
+    const tokenA = new TokenMock({ key: A, scope: 'container' });
 
     class B {
       singleton = container.inject(Singleton);
@@ -129,7 +135,7 @@ describe('Container', () => {
       a = container.inject(A);
       transient = container.inject(Transient, 'dep-b');
     }
-    const tagB = new TagMock({ token: B, scope: 'container' });
+    const tokenB = new TokenMock({ key: B, scope: 'container' });
 
     class C {
       singleton = container.inject(Singleton);
@@ -138,7 +144,7 @@ describe('Container', () => {
       b = container.inject(B);
       transient = container.inject(Transient, 'dep-c');
     }
-    const tagC = new TagMock({ token: C, scope: 'container' });
+    const tokenC = new TokenMock({ key: C, scope: 'container' });
 
     const c = container.inject(C);
 
@@ -160,15 +166,12 @@ describe('Container', () => {
     expect(bContainer.isEmpty).toBe(true);
     expect(cContainer.isEmpty).toBe(true);
 
-    expect(tagSingleton.containersInUse.size).toBe(1);
-    expect(tagAborter.containersInUse.size).toBe(0);
-    expect(tagTransient.containersInUse.size).toBe(0);
-    expect(tagA.containersInUse.size).toBe(0);
-    expect(tagB.containersInUse.size).toBe(0);
-    expect(tagC.containersInUse.size).toBe(0);
-    // expect([...tagSingleton.containersInUse.values()][0]).toBe(container);
-
-    console.info('fff', container.parent);
+    expect(tokenSingleton.containersInUse.size).toBe(1);
+    expect(tokenAborter.containersInUse.size).toBe(0);
+    expect(tokenTransient.containersInUse.size).toBe(0);
+    expect(tokenA.containersInUse.size).toBe(0);
+    expect(tokenB.containersInUse.size).toBe(0);
+    expect(tokenC.containersInUse.size).toBe(0);
   });
 
   it('two containers with nested various things', () => {
@@ -205,6 +208,15 @@ describe('Container', () => {
     const root = new ContainerMock('root');
 
     const injectable = injectableLib.bind(root);
+
+    const adminKey = root.register('admin-key', {
+      value: '#kek',
+    });
+
+    class TransientTest {
+      constructor(public prikols: number) {}
+    }
+    root.register(TransientTest);
 
     interface IDestroyable {
       destroy(): void;
@@ -303,6 +315,8 @@ describe('Container', () => {
       static readonly counter = createCounter();
       static readonly destroyedIds = new Set<number>();
 
+      adminKey = root.inject(adminKey);
+
       id = VMPandaContainer.counter.next();
 
       destroy(): void {
@@ -334,6 +348,8 @@ describe('Container', () => {
       yabloki = root.inject(YablokiTransient);
       slivyi = root.inject(SlivyiTransient);
       rofles = root.inject(RoflesTransient);
+
+      transientTest = root.inject(TransientTest, 10);
     }
 
     const vmPanda = root.inject(VMPandaContainer);
@@ -342,9 +358,11 @@ describe('Container', () => {
     expect(AborterResolution.counter.value).toBe(4);
     expect(vmPanda.aborter.id).toBe(1);
     expect(vmPanda.rofles.box.aborter.id).toBe(2);
+    expect(vmPanda.adminKey).toBe('#kek');
 
     expect(vmWorm.aborter.id).toBe(3);
     expect(vmWorm.rofles.box.aborter.id).toBe(4);
+    expect(vmWorm.transientTest.prikols).toBe(10);
 
     expect(vmPanda.yabloki.aborter.id).toBe(1);
     expect(vmPanda.slivyi.aborter.id).toBe(1);
@@ -367,20 +385,31 @@ describe('Container', () => {
     expect(vmWorm.rofles.id).toBe(2);
     expect(vmWorm.rofles.box.yabloki.id).toBe(4);
 
-    root.destroy(vmPanda);
     root.destroy(vmWorm);
 
+    expect([...AborterResolution.destroyedIds.values()]).toStrictEqual([3, 4]);
+    expect([...RoflesTransient.destroyedIds.values()]).toStrictEqual([2]);
+    expect([...YablokiTransient.destroyedIds.values()]).toStrictEqual([3, 4]);
+    expect([...SlivyiTransient.destroyedIds.values()]).toStrictEqual([2]);
+    expect([...VMPandaContainer.destroyedIds.values()]).toStrictEqual([]);
+    expect([...VMWormContainer.destroyedIds.values()]).toStrictEqual([1]);
+    expect([...BoxContainer.destroyedIds.values()]).toStrictEqual([2]);
+    expect([...LoveManager.destroyedIds.values()]).toStrictEqual([]);
+
+    root.destroy(vmPanda);
+
     expect([...AborterResolution.destroyedIds.values()]).toStrictEqual([
-      1, 2, 3, 4,
+      3, 4, 1, 2,
     ]);
-    expect([...RoflesTransient.destroyedIds.values()]).toStrictEqual([1, 2]);
+    expect([...RoflesTransient.destroyedIds.values()]).toStrictEqual([2, 1]);
     expect([...YablokiTransient.destroyedIds.values()]).toStrictEqual([
-      1, 2, 3, 4,
+      3, 4, 1, 2,
     ]);
-    expect([...SlivyiTransient.destroyedIds.values()]).toStrictEqual([1, 2]);
+    expect([...SlivyiTransient.destroyedIds.values()]).toStrictEqual([2, 1]);
     expect([...VMPandaContainer.destroyedIds.values()]).toStrictEqual([1]);
     expect([...VMWormContainer.destroyedIds.values()]).toStrictEqual([1]);
-    expect([...BoxContainer.destroyedIds.values()]).toStrictEqual([1, 2]);
+    expect([...BoxContainer.destroyedIds.values()]).toStrictEqual([2, 1]);
+
     expect([...LoveManager.destroyedIds.values()]).toStrictEqual([]);
   });
 });

@@ -1,8 +1,10 @@
 import { Maybe } from 'yummies/utils/types';
 
-import { Tag } from './tag.js';
-import { TagConfig } from './tag.types.js';
+import { Token } from './token.js';
+import { TokenConfig } from './token.types.js';
 
 export interface ContainerConfig {
-  fallbackTag?: Maybe<(value: any) => TagConfig<any, any> | Tag<any, any>>;
+  fallbackToken?: Maybe<
+    (value: any) => TokenConfig<any, any> | Token<any, any>
+  >;
 }

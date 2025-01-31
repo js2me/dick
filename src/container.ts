@@ -2,19 +2,18 @@ import { Class, Maybe } from 'yummies/utils/types';
 
 import { containerMark } from './constants.js';
 import { ContainerConfig } from './container.types.js';
-import { tag, Tag } from './tag.js';
-import { AnyTag } from './tag.types.js';
+import { token, Token } from './token.js';
+import { AnyToken } from './token.types.js';
 import { Destroyable } from './types.js';
 
 export class Container implements Destroyable, Disposable {
-  injections = new Map<AnyTag, any>();
-  inheritInjections = new WeakMap<AnyTag, any>();
+  injections = new Map<AnyToken, any>();
+  inheritInjections = new WeakMap<AnyToken, any>();
   parent?: Container;
   children = new Set<Container>();
   config: ContainerConfig;
 
   private static readonly transitPath: Container[] = [];
-  private static lastTouchedContainer?: Container;
 
   get root(): Container {
     const parent = this.parent;
@@ -31,31 +30,31 @@ export class Container implements Destroyable, Disposable {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected resolveTag(firstArg: any, ...args: any[]) {
+  protected resolveToken(firstArg: any, ...args: any[]) {
     const targetContainer: Container = this;
 
-    let tag = Tag.search(firstArg);
+    let token = Token.search(firstArg);
 
-    if (!tag) {
-      if (targetContainer.config.fallbackTag) {
-        const newTagOrConfig = targetContainer.config.fallbackTag(firstArg);
-        tag =
-          newTagOrConfig instanceof Tag
-            ? newTagOrConfig
-            : Tag.create(newTagOrConfig);
+    if (!token) {
+      if (targetContainer.config.fallbackToken) {
+        const newTokenOrConfig = targetContainer.config.fallbackToken(firstArg);
+        token =
+          newTokenOrConfig instanceof Token
+            ? newTokenOrConfig
+            : Token.create(newTokenOrConfig);
       } else {
-        throw new Error('tag not found');
+        throw new Error('token not found');
       }
     }
 
-    return tag;
+    return token;
   }
 
-  protected resolveTargetContainer(tag: AnyTag) {
+  protected resolveTargetContainer(token: AnyToken) {
     const lastContainer = Container.transitPath.at(-1);
     let targetContainer: Container = this;
 
-    switch (tag.scope) {
+    switch (token.scope) {
       case 'container': {
         const parentContainer = lastContainer ?? this;
         targetContainer = parentContainer.extend();
@@ -85,56 +84,54 @@ export class Container implements Destroyable, Disposable {
   constructor(config?: ContainerConfig & { parent?: Container }) {
     this.parent = config?.parent;
     this.config = {
-      fallbackTag: config?.fallbackTag,
+      fallbackToken: config?.fallbackToken,
     };
   }
 
-  inject<TTarget, TArgs extends any[] = []>(
-    classConstructor: Class<TTarget, TArgs>,
+  inject<TValue, TArgs extends any[] = []>(
+    classConstructor: Class<TValue, TArgs>,
     ...args: TArgs
-  ): TTarget;
+  ): TValue;
 
-  inject<TTarget, TArgs extends any[] = []>(
-    tag: Tag<TTarget, TArgs>,
+  inject<TValue, TArgs extends any[] = []>(
+    token: Token<TValue, TArgs>,
     ...args: TArgs
-  ): TTarget;
+  ): TValue;
 
   inject(firstArg: any, ...args: any[]): any {
-    const tag = this.resolveTag(firstArg, ...args);
-    const targetContainer = this.resolveTargetContainer(tag);
+    const token = this.resolveToken(firstArg, ...args);
+    const targetContainer = this.resolveTargetContainer(token);
 
     let transitPathIndex: Maybe<number>;
 
-    if (tag.scope === 'container') {
+    if (token.scope === 'container') {
       transitPathIndex = Container.transitPath.push(targetContainer) - 1;
     }
 
     let injection: any;
 
-    Container.lastTouchedContainer = targetContainer;
-
-    if (targetContainer.inheritInjections.has(tag)) {
-      injection = targetContainer.inheritInjections.get(tag)!;
-    } else if (targetContainer.injections.has(tag)) {
-      injection = targetContainer.injections.get(tag)!;
+    if (targetContainer.inheritInjections.has(token)) {
+      injection = targetContainer.inheritInjections.get(token)!;
+    } else if (targetContainer.injections.has(token)) {
+      injection = targetContainer.injections.get(token)!;
     } else {
       let inheritInjection: any;
 
-      if (tag.scope === 'container') {
-        inheritInjection = Container.getFromTransitPath(tag);
+      if (token.scope === 'container') {
+        inheritInjection = Container.getFromTransitPath(token);
       }
 
       if (inheritInjection) {
-        targetContainer.inheritInjections.set(tag, inheritInjection);
+        targetContainer.inheritInjections.set(token, inheritInjection);
         injection = inheritInjection;
       } else {
-        injection = tag.createValue(args as any);
-        targetContainer.injections.set(tag, injection);
-        tag.containersInUse.add(targetContainer);
+        injection = token.createValue(args as any);
+        targetContainer.injections.set(token, injection);
+        token.containersInUse.add(targetContainer);
       }
     }
 
-    if (!(containerMark in injection)) {
+    if (typeof injection === 'object' && !(containerMark in injection)) {
       Object.defineProperty(injection!, containerMark, {
         value: targetContainer,
         configurable: true,
@@ -142,15 +139,16 @@ export class Container implements Destroyable, Disposable {
         enumerable: false,
       });
     }
-    if (tag.scope === 'container' && typeof transitPathIndex === 'number') {
+    if (token.scope === 'container' && typeof transitPathIndex === 'number') {
       Container.transitPath.splice(transitPathIndex, 1);
     }
 
     return injection;
   }
 
-  get<TTarget, TArgs extends any[] = []>(tag: Tag<TTarget, TArgs>): TTarget {
-    const value = this.injections.get(tag) ?? this.inheritInjections.get(tag);
+  get<TValue, TArgs extends any[] = []>(token: Token<TValue, TArgs>): TValue {
+    const value =
+      this.injections.get(token) ?? this.inheritInjections.get(token);
 
     if (!value) {
       throw new Error('value not found');
@@ -159,16 +157,16 @@ export class Container implements Destroyable, Disposable {
     return value;
   }
 
-  private static getFromTransitPath(tag: AnyTag): Maybe<Container> {
+  private static getFromTransitPath(token: AnyToken): Maybe<Container> {
     for (let i = this.transitPath.length - 1; i >= 0; i--) {
       const container = this.transitPath[i];
-      if (container.injections.has(tag)) {
-        return container.injections.get(tag)!;
+      if (container.injections.has(token)) {
+        return container.injections.get(token)!;
       }
 
       for (const child of container.children) {
-        if (child.injections.has(tag)) {
-          return child.injections.get(tag)!;
+        if (child.injections.has(token)) {
+          return child.injections.get(token)!;
         }
       }
     }
@@ -219,19 +217,15 @@ export class Container implements Destroyable, Disposable {
 
         containersToDestroy.push(...container.children.values());
 
-        container.injections.forEach((value, tag) => {
-          tag.destroyValue(value);
-          tag.containersInUse.delete(container);
+        container.injections.forEach((value, token) => {
+          token.destroyValue(value);
+          token.containersInUse.delete(container);
 
           if (Container.search(value) === container) {
             delete value[containerMark];
           }
         });
         container.injections.clear();
-
-        if (Container.lastTouchedContainer === container) {
-          Container.lastTouchedContainer = undefined;
-        }
       }
 
       const foundContainer = Container.search(value);
@@ -260,7 +254,7 @@ export class Container implements Destroyable, Disposable {
     }
   }
 
-  register = tag;
+  register = token;
 
   [Symbol.dispose](): void {
     this.destroy();

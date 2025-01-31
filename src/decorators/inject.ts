@@ -2,14 +2,14 @@
 import { Class, IsEmptyArray } from 'yummies/utils/types';
 
 import { Container, container } from '../container.js';
-import { Tag } from '../tag.js';
+import { Token } from '../token.js';
 
-export function inject<TTarget, TArgs extends any[] = []>(
-  classConstructor: Class<TTarget, TArgs>,
+export function inject<TValue, TArgs extends any[] = []>(
+  classConstructor: Class<TValue, TArgs>,
   ..._: IsEmptyArray<TArgs> extends true ? [getArgs?: (ctx: any) => TArgs] : []
 ): any;
-export function inject<TTarget, TArgs extends any[] = []>(
-  tag: Tag<TTarget, TArgs>,
+export function inject<TValue, TArgs extends any[] = []>(
+  token: Token<TValue, TArgs>,
   ..._: IsEmptyArray<TArgs> extends true ? [getArgs?: (ctx: any) => TArgs] : []
 ): any;
 export function inject(value: any, ...injectArgs: any[]) {
