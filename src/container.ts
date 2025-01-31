@@ -1,4 +1,4 @@
-import { Class, Maybe } from 'yummies/utils/types';
+import { AnyObject, Class, Maybe } from 'yummies/utils/types';
 
 import { containerMark } from './constants.js';
 import { ContainerConfig } from './container.types.js';
@@ -146,10 +146,14 @@ export class Container implements Destroyable, Disposable {
     return injection;
   }
 
-  get<TValue>(classConstructor: Class<TValue>): TValue;
-  get<TValue>(input: Token<TValue>): TValue;
+  get<TValue>(classConstructor: Class<TValue>, context?: AnyObject): TValue;
+  get<TValue>(input: Token<TValue>, context?: AnyObject): TValue;
 
-  get(input: any): any {
+  get(input: any, context?: AnyObject): any {
+    if (context) {
+      return this.bind(context).get(input);
+    }
+
     const token = Token.search(input);
 
     if (!token) {
