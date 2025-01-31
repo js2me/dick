@@ -90,12 +90,12 @@ export class Container implements Destroyable, Disposable {
 
   inject<TValue, TArgs extends any[] = []>(
     classConstructor: Class<TValue, TArgs>,
-    ...args: TArgs
+    ...args: NoInfer<TArgs>
   ): TValue;
 
   inject<TValue, TArgs extends any[] = []>(
     token: Token<TValue, TArgs>,
-    ...args: TArgs
+    ...args: NoInfer<TArgs>
   ): TValue;
 
   inject(firstArg: any, ...args: any[]): any {
