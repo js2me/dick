@@ -3,12 +3,7 @@ import { AnyPrimitive, Class } from 'yummies/utils/types';
 
 import { tokenMark } from './constants.js';
 import { Container } from './container.js';
-import {
-  AnyToken,
-  TokenConfig,
-  TokenScope,
-  TokenStrategy,
-} from './token.types.js';
+import { AnyToken, TokenConfig, TokenScope, TokenType } from './token.types.js';
 import { Destroyable } from './types.js';
 
 declare const process: { env: { NODE_ENV?: string } };
@@ -76,7 +71,7 @@ export class Token<TValue, TArgs extends any[] = []>
     throw new Error('invalid configuration');
   }
 
-  strategy: TokenStrategy;
+  type: TokenType;
   config: TokenConfig<TValue, TArgs>;
   references: Set<TValue>;
   key: Exclude<TokenConfig<TValue, TArgs>['key'], undefined>;
@@ -89,7 +84,7 @@ export class Token<TValue, TArgs extends any[] = []>
     this.key = this.defineKey();
     this.references = new Set<TValue>();
     this.containersInUse = new WeakSet();
-    this.strategy = this.defineStrategy();
+    this.type = this.defineType();
 
     this.processConfig();
 
@@ -99,7 +94,7 @@ export class Token<TValue, TArgs extends any[] = []>
   createValue(args: TArgs): TValue {
     let value: TValue = undefined as TValue;
 
-    if (this.strategy === 'class' && typeof this.config.key === 'function') {
+    if (this.type === 'class' && typeof this.config.key === 'function') {
       value = new this.config.key(...args);
     } else if (this.config.value) {
       if (typeof this.config.value === 'function') {
@@ -127,7 +122,7 @@ export class Token<TValue, TArgs extends any[] = []>
 
     this.scope = this.defineScope();
     this.key = this.defineKey();
-    this.strategy = this.defineStrategy();
+    this.type = this.defineType();
 
     this.processConfig();
   }
@@ -140,9 +135,9 @@ export class Token<TValue, TArgs extends any[] = []>
     return this.config.key ?? Symbol();
   }
 
-  private defineStrategy(): TokenStrategy {
-    if (this.config.strategy) {
-      return this.config.strategy;
+  private defineType(): TokenType {
+    if (this.config.type) {
+      return this.config.type;
     } else if (typeof this.config.key === 'function') {
       return 'class';
     } else {
@@ -152,7 +147,7 @@ export class Token<TValue, TArgs extends any[] = []>
 
   private processConfig() {
     if (
-      this.strategy === 'class' &&
+      this.type === 'class' &&
       typeof this.config.key === 'function' &&
       tokenMark in this.config.key
     ) {

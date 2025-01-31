@@ -2,7 +2,7 @@ import { Class } from 'yummies/utils/types';
 
 import { Token } from './token.js';
 
-export type TokenStrategy = 'class' | 'constant';
+export type TokenType = 'class' | 'constant';
 
 export type TokenScope = 'singleton' | 'transient' | 'container' | 'resolution';
 
@@ -10,7 +10,7 @@ export interface TokenConfig<TValue, TArgs extends any[] = []> {
   scope?: TokenScope;
   key?: string | symbol | number | Class<TValue, TArgs>;
   meta?: any;
-  strategy?: TokenStrategy;
+  type?: TokenType;
   value?: TValue | ((...args: TArgs) => TValue);
   destroy?: (value: TValue) => void;
 }
