@@ -146,12 +146,21 @@ export class Container implements Destroyable, Disposable {
     return injection;
   }
 
-  get<TValue, TArgs extends any[] = []>(token: Token<TValue, TArgs>): TValue {
+  get<TValue>(classConstructor: Class<TValue>): TValue;
+  get<TValue>(input: Token<TValue>): TValue;
+
+  get(input: any): any {
+    const token = Token.search(input);
+
+    if (!token) {
+      throw new Error('token not found');
+    }
+
     const value =
       this.injections.get(token) ?? this.inheritInjections.get(token);
 
     if (!value) {
-      throw new Error('value not found');
+      throw new Error('injection not found');
     }
 
     return value;
