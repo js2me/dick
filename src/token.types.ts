@@ -8,7 +8,7 @@ export type TokenScope = 'singleton' | 'transient' | 'container' | 'resolution';
 
 export interface TokenConfig<TValue, TArgs extends any[] = []> {
   scope?: TokenScope;
-  key: string | symbol | number | Class<TValue, TArgs>;
+  key?: string | symbol | number | Class<TValue, TArgs>;
   meta?: any;
   strategy?: TokenStrategy;
   value?: TValue | ((...args: TArgs) => TValue);
