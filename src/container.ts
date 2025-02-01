@@ -14,7 +14,7 @@ export class Container implements Destroyable, Disposable {
   config: ContainerConfig;
 
   private static readonly transitPath: Container[] = [];
-  private static lastContainer: Container | null = null;
+  private static scoped: Container | null = null;
 
   get root(): Container {
     const parent = this.parent;
@@ -57,14 +57,15 @@ export class Container implements Destroyable, Disposable {
 
     switch (token.scope) {
       case 'scoped': {
-        const parentContainer =
-          Container.lastContainer ?? lastContainer ?? this;
+        const parentContainer = Container.scoped ?? lastContainer ?? this;
         targetContainer = parentContainer.extend();
+        Container.scoped = targetContainer;
         break;
       }
       case 'container': {
         const parentContainer = lastContainer ?? this;
         targetContainer = parentContainer.extend();
+        Container.scoped = targetContainer;
         break;
       }
       case 'singleton': {
@@ -81,11 +82,10 @@ export class Container implements Destroyable, Disposable {
       case 'resolution': {
         const parentContainer = lastContainer ?? this;
         targetContainer = parentContainer;
+        Container.scoped = targetContainer;
         break;
       }
     }
-
-    Container.lastContainer = targetContainer;
 
     return targetContainer;
   }

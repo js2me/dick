@@ -228,6 +228,9 @@ describe('Container', () => {
       }
     };
 
+    @injectable({ scope: 'scoped' })
+    class ScopedCat {}
+
     @injectable({ scope: 'singleton', destroy: handleDestroy })
     class LoveManager implements IDestroyable {
       static readonly counter = createCounter();
@@ -259,6 +262,8 @@ describe('Container', () => {
       static readonly destroyedIds = new Set<number>();
 
       id = YablokiTransient.counter.next();
+
+      cat = root.inject(ScopedCat);
 
       destroy(): void {
         YablokiTransient.destroyedIds.add(this.id);
@@ -344,6 +349,7 @@ describe('Container', () => {
 
       aborter = root.inject(AborterResolution);
       loveManager = root.inject(LoveManager);
+      cat = root.inject(ScopedCat);
 
       yabloki = root.inject(YablokiTransient);
       slivyi = root.inject(SlivyiTransient);
