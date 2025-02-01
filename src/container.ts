@@ -57,7 +57,9 @@ export class Container implements Destroyable, Disposable {
 
     switch (token.scope) {
       case 'scoped': {
-        targetContainer = Container.lastContainer ?? lastContainer ?? this;
+        const parentContainer =
+          Container.lastContainer ?? lastContainer ?? this;
+        targetContainer = parentContainer.extend();
         break;
       }
       case 'container': {
