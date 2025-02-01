@@ -4,7 +4,12 @@ import { Token } from './token.js';
 
 export type TokenType = 'class' | 'constant';
 
-export type TokenScope = 'singleton' | 'transient' | 'container' | 'resolution';
+export type TokenScope =
+  | 'singleton'
+  | 'transient'
+  | 'container'
+  | 'resolution'
+  | 'scoped';
 
 export interface TokenConfig<TValue, TArgs extends any[] = []> {
   scope?: TokenScope;

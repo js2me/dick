@@ -14,6 +14,7 @@ export class Container implements Destroyable, Disposable {
   config: ContainerConfig;
 
   private static readonly transitPath: Container[] = [];
+  private static lastContainer: Container | null = null;
 
   get root(): Container {
     const parent = this.parent;
@@ -55,6 +56,10 @@ export class Container implements Destroyable, Disposable {
     let targetContainer: Container = this;
 
     switch (token.scope) {
+      case 'scoped': {
+        targetContainer = Container.lastContainer ?? lastContainer ?? this;
+        break;
+      }
       case 'container': {
         const parentContainer = lastContainer ?? this;
         targetContainer = parentContainer.extend();
@@ -77,6 +82,8 @@ export class Container implements Destroyable, Disposable {
         break;
       }
     }
+
+    Container.lastContainer = targetContainer;
 
     return targetContainer;
   }
