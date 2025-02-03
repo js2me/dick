@@ -69,17 +69,7 @@ export class Container implements Destroyable, Disposable {
         break;
       }
       case 'singleton': {
-        const root = this.root;
-
-        for (const child of root.children) {
-          if (child.injections.has(token)) {
-            targetContainer = child;
-            Container.scoped = targetContainer;
-            return targetContainer;
-          }
-        }
-
-        targetContainer = this.root.extend();
+        targetContainer = this.root;
         Container.scoped = targetContainer;
         break;
       }
@@ -126,9 +116,7 @@ export class Container implements Destroyable, Disposable {
     const token = this.resolveToken(firstArg, ...args);
     const targetContainer = this.resolveTargetContainer(token);
     const processTransitPath =
-      token.scope === 'container' ||
-      token.scope === 'scoped' ||
-      token.scope === 'singleton';
+      token.scope === 'container' || token.scope === 'scoped';
 
     let transitPathIndex: Maybe<number>;
 
@@ -189,22 +177,16 @@ export class Container implements Destroyable, Disposable {
       throw new Error('token not found');
     }
 
+    let containerToSearch: Container = this;
+
     switch (token.scope) {
       case 'singleton': {
-        const root = this.root;
-        for (const child of root.children) {
-          const value =
-            child.injections.get(token) ?? child.inheritInjections.get(token);
-
-          if (value) {
-            return value;
-          }
-        }
+        containerToSearch = this.root;
         break;
       }
       case 'container':
       case 'scoped': {
-        for (const child of this.children) {
+        for (const child of containerToSearch.children) {
           const value =
             child.injections.get(token) ?? child.inheritInjections.get(token);
 
@@ -220,7 +202,8 @@ export class Container implements Destroyable, Disposable {
     }
 
     const value =
-      this.injections.get(token) ?? this.inheritInjections.get(token);
+      containerToSearch.injections.get(token) ??
+      containerToSearch.inheritInjections.get(token);
 
     if (!value) {
       throw new Error('injection not found');
