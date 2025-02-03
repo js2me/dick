@@ -169,6 +169,17 @@ export class Container implements Destroyable, Disposable {
       throw new Error('token not found');
     }
 
+    if (token.scope === 'container' || token.scope === 'scoped') {
+      for (const child of this.children) {
+        const value =
+          child.injections.get(token) ?? child.inheritInjections.get(token);
+
+        if (value) {
+          return value;
+        }
+      }
+    }
+
     const value =
       this.injections.get(token) ?? this.inheritInjections.get(token);
 
