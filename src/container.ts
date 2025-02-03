@@ -70,7 +70,6 @@ export class Container implements Destroyable, Disposable {
       }
       case 'singleton': {
         targetContainer = this.root;
-        Container.scoped = targetContainer;
         break;
       }
       case 'transient': {
