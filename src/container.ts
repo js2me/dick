@@ -69,8 +69,17 @@ export class Container implements Destroyable, Disposable {
         break;
       }
       case 'singleton': {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        targetContainer = this.root;
+        const root = this.root;
+
+        for (const child of root.children) {
+          if (child.injections.has(token)) {
+            targetContainer = child;
+            Container.scoped = targetContainer;
+            return targetContainer;
+          }
+        }
+
+        targetContainer = this.root.extend();
         Container.scoped = targetContainer;
         break;
       }
