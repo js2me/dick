@@ -16,6 +16,7 @@ export class Token<TValue, TArgs extends any[] = []>
   static search<TClass extends Class<any>>(
     Class: TClass,
   ): Token<TClass extends Class<infer Value> ? Value : never> | null;
+  static search<TValue = any>(key: string | symbol): Token<TValue> | null;
   static search<TValue = any>(token: Token<TValue>): Token<TValue> | null;
 
   static search(value: any) {
@@ -29,6 +30,10 @@ export class Token<TValue, TArgs extends any[] = []>
       value[tokenMark] instanceof Token
     ) {
       return value[tokenMark];
+    }
+
+    if (Token.tokensMap.has(value)) {
+      return Token.tokensMap.get(value)!;
     }
 
     return null;

@@ -107,6 +107,11 @@ export class Container implements Destroyable, Disposable {
     ...args: NoInfer<TArgs>
   ): TValue;
 
+  inject<TValue, TArgs extends any[] = []>(
+    key: string | symbol,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
   inject(firstArg: any, ...args: any[]): any {
     const token = this.resolveToken(firstArg, ...args);
     const targetContainer = this.resolveTargetContainer(token);
@@ -155,6 +160,7 @@ export class Container implements Destroyable, Disposable {
     return injection;
   }
 
+  get<TValue>(key: string | symbol, context?: AnyObject): TValue;
   get<TValue>(classConstructor: Class<TValue>, context?: AnyObject): TValue;
   get<TValue>(input: Token<TValue>, context?: AnyObject): TValue;
 
