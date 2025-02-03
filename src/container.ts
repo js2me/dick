@@ -71,6 +71,7 @@ export class Container implements Destroyable, Disposable {
       case 'singleton': {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         targetContainer = this.root;
+        Container.scoped = targetContainer;
         break;
       }
       case 'transient': {
@@ -115,10 +116,14 @@ export class Container implements Destroyable, Disposable {
   inject(firstArg: any, ...args: any[]): any {
     const token = this.resolveToken(firstArg, ...args);
     const targetContainer = this.resolveTargetContainer(token);
+    const processTransitPath =
+      token.scope === 'container' ||
+      token.scope === 'scoped' ||
+      token.scope === 'singleton';
 
     let transitPathIndex: Maybe<number>;
 
-    if (token.scope === 'container') {
+    if (processTransitPath) {
       transitPathIndex = Container.transitPath.push(targetContainer) - 1;
     }
 
@@ -153,7 +158,7 @@ export class Container implements Destroyable, Disposable {
         enumerable: false,
       });
     }
-    if (token.scope === 'container' && typeof transitPathIndex === 'number') {
+    if (processTransitPath && typeof transitPathIndex === 'number') {
       Container.transitPath.splice(transitPathIndex, 1);
     }
 
