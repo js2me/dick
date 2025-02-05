@@ -228,7 +228,7 @@ describe('Container', () => {
       }
     };
 
-    @injectable({ scope: 'scoped' })
+    @injectable({ scope: 'container' })
     class ScopedCat {}
 
     @injectable({ scope: 'singleton', destroy: handleDestroy })

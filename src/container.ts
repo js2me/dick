@@ -69,14 +69,8 @@ export class Container implements Disposable {
     let targetContainer: Container = this;
 
     switch (scope) {
-      case 'scoped': {
-        const parentContainer = Container.scoped ?? lastContainer ?? this;
-        targetContainer = parentContainer.extend();
-        Container.scoped = targetContainer;
-        break;
-      }
       case 'container': {
-        const parentContainer = lastContainer ?? this;
+        const parentContainer = Container.scoped ?? lastContainer ?? this;
         targetContainer = parentContainer.extend();
         Container.scoped = targetContainer;
         break;
@@ -231,7 +225,7 @@ export class Container implements Disposable {
   injectIn(scope: TokenScope, firstArg: any, ...args: any[]): any {
     const token = this.resolveToken(firstArg, ...args);
     const targetContainer = this.resolveTargetContainer(token, scope);
-    const processTransitPath = scope === 'container' || scope === 'scoped';
+    const processTransitPath = scope === 'container';
 
     let transitPathIndex: Maybe<number>;
 
@@ -304,8 +298,7 @@ export class Container implements Disposable {
         containerToSearch = this.root;
         break;
       }
-      case 'container':
-      case 'scoped': {
+      case 'container': {
         for (const child of containerToSearch.children) {
           const value =
             child.injections.get(token) ?? child.inheritInjections.get(token);
