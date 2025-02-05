@@ -3,7 +3,7 @@ import { AnyObject, Class, Maybe } from 'yummies/utils/types';
 import { containerMark } from './constants.js';
 import { ContainerConfig } from './container.types.js';
 import { token, Token } from './token.js';
-import { AnyToken } from './token.types.js';
+import { AnyToken, TokenScope } from './token.types.js';
 import { Destroyable } from './types.js';
 
 export class Container implements Destroyable, Disposable {
@@ -51,11 +51,14 @@ export class Container implements Destroyable, Disposable {
     return token;
   }
 
-  protected resolveTargetContainer(token: AnyToken) {
+  protected resolveTargetContainer(
+    token: AnyToken,
+    scope: TokenScope = token.scope,
+  ) {
     const lastContainer = Container.transitPath.at(-1);
     let targetContainer: Container = this;
 
-    switch (token.scope) {
+    switch (scope) {
       case 'scoped': {
         const parentContainer = Container.scoped ?? lastContainer ?? this;
         targetContainer = parentContainer.extend();
@@ -113,9 +116,34 @@ export class Container implements Destroyable, Disposable {
 
   inject(firstArg: any, ...args: any[]): any {
     const token = this.resolveToken(firstArg, ...args);
-    const targetContainer = this.resolveTargetContainer(token);
-    const processTransitPath =
-      token.scope === 'container' || token.scope === 'scoped';
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    return this.injectIn(token.scope, firstArg, ...args);
+  }
+
+  injectIn<TValue, TArgs extends any[] = []>(
+    scope: TokenScope,
+    classConstructor: Class<TValue, TArgs>,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectIn<TValue, TArgs extends any[] = []>(
+    scope: TokenScope,
+    token: Token<TValue, TArgs>,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectIn<TValue, TArgs extends any[] = []>(
+    scope: TokenScope,
+    key: string | symbol,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectIn(scope: TokenScope, firstArg: any, ...args: any[]): any {
+    const token = this.resolveToken(firstArg, ...args);
+    const targetContainer = this.resolveTargetContainer(token, scope);
+    const processTransitPath = scope === 'container' || scope === 'scoped';
 
     let transitPathIndex: Maybe<number>;
 
@@ -132,7 +160,7 @@ export class Container implements Destroyable, Disposable {
     } else {
       let inheritInjection: any;
 
-      if (token.scope === 'container') {
+      if (scope === 'container') {
         inheritInjection = Container.getFromTransitPath(token);
       }
 

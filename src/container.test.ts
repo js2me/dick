@@ -205,18 +205,18 @@ describe('Container', () => {
       }
     }
 
-    const root = new ContainerMock('root');
+    const container = new ContainerMock('root');
 
-    const injectable = injectableLib.bind(root);
+    const injectable = injectableLib.bind(container);
 
-    const adminKey = root.register('admin-key', {
+    const adminKey = container.register('admin-key', {
       value: '#kek',
     });
 
     class TransientTest {
       constructor(public prikols: number) {}
     }
-    root.register(TransientTest);
+    container.register(TransientTest);
 
     interface IDestroyable {
       destroy(): void;
@@ -263,13 +263,13 @@ describe('Container', () => {
 
       id = YablokiTransient.counter.next();
 
-      cat = root.inject(ScopedCat);
+      cat = container.inject(ScopedCat);
 
       destroy(): void {
         YablokiTransient.destroyedIds.add(this.id);
       }
 
-      aborter = root.inject(AborterResolution);
+      aborter = container.inject(AborterResolution);
     }
 
     @injectable({ scope: 'transient', destroy: handleDestroy })
@@ -283,7 +283,7 @@ describe('Container', () => {
         SlivyiTransient.destroyedIds.add(this.id);
       }
 
-      aborter = root.inject(AborterResolution);
+      aborter = container.inject(AborterResolution);
     }
 
     @injectable({ scope: 'transient', destroy: handleDestroy })
@@ -297,8 +297,8 @@ describe('Container', () => {
         RoflesTransient.destroyedIds.add(this.id);
       }
 
-      aborter = root.inject(AborterResolution);
-      box = root.inject(BoxContainer);
+      aborter = container.inject(AborterResolution);
+      box = container.inject(BoxContainer);
     }
 
     @injectable({ scope: 'container', destroy: handleDestroy })
@@ -311,8 +311,8 @@ describe('Container', () => {
       destroy(): void {
         BoxContainer.destroyedIds.add(this.id);
       }
-      aborter = root.inject(AborterResolution);
-      yabloki = root.inject(YablokiTransient);
+      aborter = container.inject(AborterResolution);
+      yabloki = container.inject(YablokiTransient);
     }
 
     @injectable({ scope: 'container', destroy: handleDestroy })
@@ -320,7 +320,7 @@ describe('Container', () => {
       static readonly counter = createCounter();
       static readonly destroyedIds = new Set<number>();
 
-      adminKey = root.inject(adminKey);
+      adminKey = container.inject(adminKey);
 
       id = VMPandaContainer.counter.next();
 
@@ -328,12 +328,12 @@ describe('Container', () => {
         VMPandaContainer.destroyedIds.add(this.id);
       }
 
-      aborter = root.inject(AborterResolution);
-      loveManager = root.inject(LoveManager);
+      aborter = container.inject(AborterResolution);
+      loveManager = container.inject(LoveManager);
 
-      yabloki = root.inject(YablokiTransient);
-      slivyi = root.inject(SlivyiTransient);
-      rofles = root.inject(RoflesTransient);
+      yabloki = container.inject(YablokiTransient);
+      slivyi = container.inject(SlivyiTransient);
+      rofles = container.inject(RoflesTransient);
     }
 
     @injectable({ scope: 'container', destroy: handleDestroy })
@@ -347,19 +347,19 @@ describe('Container', () => {
         VMWormContainer.destroyedIds.add(this.id);
       }
 
-      aborter = root.inject(AborterResolution);
-      loveManager = root.inject(LoveManager);
-      cat = root.inject(ScopedCat);
+      aborter = container.inject(AborterResolution);
+      loveManager = container.inject(LoveManager);
+      cat = container.inject(ScopedCat);
 
-      yabloki = root.inject(YablokiTransient);
-      slivyi = root.inject(SlivyiTransient);
-      rofles = root.inject(RoflesTransient);
+      yabloki = container.inject(YablokiTransient);
+      slivyi = container.inject(SlivyiTransient);
+      rofles = container.inject(RoflesTransient);
 
-      transientTest = root.inject(TransientTest, 10);
+      transientTest = container.inject(TransientTest, 10);
     }
 
-    const vmPanda = root.inject(VMPandaContainer);
-    const vmWorm = root.inject(VMWormContainer);
+    const vmPanda = container.inject(VMPandaContainer);
+    const vmWorm = container.inject(VMWormContainer);
 
     expect(AborterResolution.counter.value).toBe(4);
     expect(vmPanda.aborter.id).toBe(1);
@@ -391,7 +391,7 @@ describe('Container', () => {
     expect(vmWorm.rofles.id).toBe(2);
     expect(vmWorm.rofles.box.yabloki.id).toBe(4);
 
-    root.destroy(vmWorm);
+    container.destroy(vmWorm);
 
     expect([...AborterResolution.destroyedIds.values()]).toStrictEqual([3, 4]);
     expect([...RoflesTransient.destroyedIds.values()]).toStrictEqual([2]);
@@ -402,7 +402,7 @@ describe('Container', () => {
     expect([...BoxContainer.destroyedIds.values()]).toStrictEqual([2]);
     expect([...LoveManager.destroyedIds.values()]).toStrictEqual([]);
 
-    root.destroy(vmPanda);
+    container.destroy(vmPanda);
 
     expect([...AborterResolution.destroyedIds.values()]).toStrictEqual([
       3, 4, 1, 2,
