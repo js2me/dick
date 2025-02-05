@@ -5,7 +5,7 @@ import { TokenConfig } from '../token.types.js';
 
 export const injectable =
   <T extends Class<any>>(
-    config: Omit<
+    config?: Omit<
       TokenConfig<T extends Class<infer TValue> ? TValue : any>,
       'key'
     >,
