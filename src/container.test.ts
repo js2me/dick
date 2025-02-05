@@ -418,4 +418,28 @@ describe('Container', () => {
 
     expect([...LoveManager.destroyedIds.values()]).toStrictEqual([]);
   });
+
+  it('simple tokens', () => {
+    const container = new ContainerMock();
+
+    container.register({ key: 'test', value: () => 1 });
+
+    expect(container.inject('test')).toBe(1);
+  });
+
+  it('custom scopes', () => {
+    const container = new ContainerMock();
+
+    class Foo {
+      foo = 1;
+    }
+    class Bar {
+      foo = container.injectInTransient(Foo);
+    }
+
+    container.register(Foo);
+    container.register(Bar);
+
+    expect(container.inject(Bar).foo.foo).toBe(1);
+  });
 });

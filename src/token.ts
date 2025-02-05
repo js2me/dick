@@ -4,13 +4,10 @@ import { AnyPrimitive, Class } from 'yummies/utils/types';
 import { tokenMark } from './constants.js';
 import { Container } from './container.js';
 import { AnyToken, TokenConfig, TokenScope, TokenType } from './token.types.js';
-import { Destroyable } from './types.js';
 
 declare const process: { env: { NODE_ENV?: string } };
 
-export class Token<TValue, TArgs extends any[] = []>
-  implements Destroyable, Disposable
-{
+export class Token<TValue, TArgs extends any[] = []> implements Disposable {
   static readonly tokensMap = new Map<AnyToken['key'], AnyToken>();
 
   static search<TClass extends Class<any>>(

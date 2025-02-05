@@ -1,12 +1,12 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { AnyObject, Class, Maybe } from 'yummies/utils/types';
 
 import { containerMark } from './constants.js';
 import { ContainerConfig } from './container.types.js';
 import { token, Token } from './token.js';
 import { AnyToken, TokenScope } from './token.types.js';
-import { Destroyable } from './types.js';
 
-export class Container implements Destroyable, Disposable {
+export class Container implements Disposable {
   injections = new Map<AnyToken, any>();
   inheritInjections = new WeakMap<AnyToken, any>();
   parent?: Container;
@@ -15,6 +15,8 @@ export class Container implements Destroyable, Disposable {
 
   private static readonly transitPath: Container[] = [];
   private static scoped: Container | null = null;
+
+  private fixedScope?: TokenScope;
 
   get root(): Container {
     const parent = this.parent;
@@ -44,11 +46,19 @@ export class Container implements Destroyable, Disposable {
             ? newTokenOrConfig
             : Token.create(newTokenOrConfig);
       } else {
-        throw new Error('token not found');
+        if (process.env.NODE_ENV !== 'production') {
+          console.error(firstArg, 'is not registered for DI');
+        }
+        throw new Error(`token not found`);
       }
     }
 
     return token;
+  }
+
+  scope(scope: TokenScope): this {
+    this.fixedScope = scope;
+    return this;
   }
 
   protected resolveTargetContainer(
@@ -99,6 +109,86 @@ export class Container implements Destroyable, Disposable {
     };
   }
 
+  injectInResolution<TValue, TArgs extends any[] = []>(
+    classConstructor: Class<TValue, TArgs>,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInResolution<TValue, TArgs extends any[] = []>(
+    token: Token<TValue, TArgs>,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInResolution<TValue, TArgs extends any[] = []>(
+    key: string | symbol,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInResolution(firstArg: any, ...args: any[]): any {
+    // @ts-ignore
+    return this.injectIn('resolution', firstArg, ...args);
+  }
+
+  injectInSingleton<TValue, TArgs extends any[] = []>(
+    classConstructor: Class<TValue, TArgs>,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInSingleton<TValue, TArgs extends any[] = []>(
+    token: Token<TValue, TArgs>,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInSingleton<TValue, TArgs extends any[] = []>(
+    key: string | symbol,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInSingleton(firstArg: any, ...args: any[]): any {
+    // @ts-ignore
+    return this.injectIn('singleton', firstArg, ...args);
+  }
+
+  injectInContainer<TValue, TArgs extends any[] = []>(
+    classConstructor: Class<TValue, TArgs>,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInContainer<TValue, TArgs extends any[] = []>(
+    token: Token<TValue, TArgs>,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInContainer<TValue, TArgs extends any[] = []>(
+    key: string | symbol,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInContainer(firstArg: any, ...args: any[]): any {
+    // @ts-ignore
+    return this.injectIn('container', firstArg, ...args);
+  }
+
+  injectInTransient<TValue, TArgs extends any[] = []>(
+    classConstructor: Class<TValue, TArgs>,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInTransient<TValue, TArgs extends any[] = []>(
+    token: Token<TValue, TArgs>,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInTransient<TValue, TArgs extends any[] = []>(
+    key: string | symbol,
+    ...args: NoInfer<TArgs>
+  ): TValue;
+
+  injectInTransient(firstArg: any, ...args: any[]): any {
+    // @ts-ignore
+    return this.injectIn('transient', firstArg, ...args);
+  }
+
   inject<TValue, TArgs extends any[] = []>(
     classConstructor: Class<TValue, TArgs>,
     ...args: NoInfer<TArgs>
@@ -116,10 +206,8 @@ export class Container implements Destroyable, Disposable {
 
   inject(firstArg: any, ...args: any[]): any {
     const token = this.resolveToken(firstArg, ...args);
-
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    return this.injectIn(token.scope, firstArg, ...args);
+    return this.injectIn(this.fixedScope ?? token.scope, firstArg, ...args);
   }
 
   injectIn<TValue, TArgs extends any[] = []>(
@@ -186,6 +274,8 @@ export class Container implements Destroyable, Disposable {
       Container.transitPath.splice(transitPathIndex, 1);
     }
 
+    this.fixedScope = undefined;
+
     return injection;
   }
 
@@ -201,6 +291,9 @@ export class Container implements Destroyable, Disposable {
     const token = Token.search(input);
 
     if (!token) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error(input, 'is not registered for DI');
+      }
       throw new Error('token not found');
     }
 
