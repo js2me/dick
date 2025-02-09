@@ -14,7 +14,7 @@ export class Container implements Disposable {
   config: ContainerConfig;
 
   private static readonly transitPath: Container[] = [];
-  private static scoped: Container | null = null;
+  private static scoped: Maybe<Container> = null;
 
   private fixedScope?: TokenScope;
 
@@ -380,6 +380,10 @@ export class Container implements Disposable {
 
       while (containersToDestroy.length > 0) {
         const container = containersToDestroy.shift()!;
+
+        if (Container.scoped === container) {
+          Container.scoped = container.parent;
+        }
 
         container.parent?.children.delete(container);
 
